@@ -1,0 +1,5 @@
+# Specimen image candidates
+
+The visual search returned several real mineral specimen photographs suitable for the atlas. The strongest open or institutional candidates are a **quartz crystal specimen** from Wikimedia Commons (`/home/ubuntu/upload/search_images/0HsQB2gjSABN.jpg`), a **pyrite specimen** from Wikimedia Commons (`/home/ubuntu/upload/search_images/m6FxwdAw46VD.jpg`), a **hematite specimen** from Wikimedia Commons (`/home/ubuntu/upload/search_images/pMamN3N4fFD4.jpg`), a **galena specimen** from the U.S. Geological Survey (`/home/ubuntu/upload/search_images/TlVHzCu2fbVq.jpg`), a **calcite with fluorite specimen** from the Australian Museum (`/home/ubuntu/upload/search_images/UAsZTx8a8sVJ.jpg`), and a **purple fluorite on calcite specimen** from the Science History Institute Digital Collections (`/home/ubuntu/upload/search_images/UFBwrdzpqo5n.jpg`).
+
+The implementation should use these as representative specimen photography with explicit source labels, rather than claiming that every mineral card has a unique image. Commercial marketplace and stock-photo results were excluded from the selected set.

@@ -2,12 +2,15 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowUpRight,
   ChevronRight,
+  GitCompareArrows,
   Info,
+  MapPin,
   Maximize2,
   Minimize2,
   RotateCcw,
   Search,
   Sparkles,
+  X,
 } from "lucide-react";
 import {
   elements,
@@ -48,6 +51,9 @@ export default function Home() {
   const [pinnedMineral, setPinnedMineral] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [uiError, setUiError] = useState<string | null>(null);
+  const [compareMode, setCompareMode] = useState(() => new URLSearchParams(window.location.search).get("compare") === "1");
+  const [compareSymbols, setCompareSymbols] = useState<[string, string]>(["Si", "O"]);
+  const [compareSlot, setCompareSlot] = useState<0 | 1>(1);
   const [lineGeometry, setLineGeometry] = useState<Array<{ symbol: string; x1: number; y1: number; x2: number; y2: number; family: MineralFamily; weight: number }>>([]);
 
   const appRef = useRef<HTMLElement | null>(null);
@@ -57,6 +63,8 @@ export default function Home() {
   const activeSymbol = hoveredSymbol ?? pinnedSymbol;
   const activeElement = elements.find((item) => item.symbol === activeSymbol) ?? elements[13];
   const activeMineralId = hoveredMineral ?? pinnedMineral;
+  const compareA = elements.find((item) => item.symbol === compareSymbols[0]) ?? elements[13];
+  const compareB = elements.find((item) => item.symbol === compareSymbols[1]) ?? elements[7];
 
   const filteredMinerals = useMemo(
     () => (family === "all" ? minerals : minerals.filter((mineral) => mineral.family === family)),
@@ -67,6 +75,15 @@ export default function Home() {
     () => filteredMinerals.filter((mineral) => mineral.elements.includes(activeSymbol)),
     [activeSymbol, filteredMinerals],
   );
+
+  const comparison = useMemo(() => {
+    const left = filteredMinerals.filter((mineral) => mineral.elements.includes(compareSymbols[0]));
+    const right = filteredMinerals.filter((mineral) => mineral.elements.includes(compareSymbols[1]));
+    const shared = left.filter((mineral) => mineral.elements.includes(compareSymbols[1]));
+    const leftOnly = left.filter((mineral) => !mineral.elements.includes(compareSymbols[1]));
+    const rightOnly = right.filter((mineral) => !mineral.elements.includes(compareSymbols[0]));
+    return { left, right, shared, leftOnly, rightOnly };
+  }, [compareSymbols, filteredMinerals]);
 
   const visibleMinerals = useMemo(() => {
     if (!activeMineralId) return elementMinerals;
@@ -112,12 +129,31 @@ export default function Home() {
   }, [query]);
 
   const chooseElement = (symbol: string) => {
+    if (compareMode) {
+      setCompareSymbols((current) => {
+        const next: [string, string] = [...current];
+        next[compareSlot] = symbol;
+        return next;
+      });
+      setCompareSlot((current) => current === 0 ? 1 : 0);
+    }
     setPinnedSymbol(symbol);
     setHoveredSymbol(null);
     setPinnedMineral(null);
     setHoveredMineral(null);
     setQuery("");
     setUiError(null);
+  };
+
+  const toggleCompareMode = () => {
+    setCompareMode((current) => {
+      const next = !current;
+      if (next) {
+        setCompareSymbols([pinnedSymbol, pinnedSymbol === "O" ? "Si" : "O"]);
+        setCompareSlot(1);
+      }
+      return next;
+    });
   };
 
   useLayoutEffect(() => {
@@ -206,6 +242,7 @@ export default function Home() {
         <div className="topbar-meta" aria-label="Dataset summary">
           <span><b>{elements.length}</b> elements</span>
           <span><b>{minerals.length}</b> reference minerals</span>
+          <span><b>{minerals.filter((mineral) => mineral.locality).length}</b> localities</span>
         </div>
         <button className="icon-button" onClick={toggleFullscreen} aria-label={isFullscreen ? "Exit full screen" : "View full screen"}>
           {isFullscreen ? <Minimize2 size={17} /> : <Maximize2 size={17} />}
@@ -251,6 +288,14 @@ export default function Home() {
             )}
           </div>
 
+          <button
+            className={compareMode ? "compare-toggle active" : "compare-toggle"}
+            onClick={toggleCompareMode}
+            aria-pressed={compareMode}
+          >
+            <GitCompareArrows size={14} /> Compare
+          </button>
+
           <div className="filter-scroll" aria-label="Filter by mineral family">
             {filters.map((item) => (
               <button
@@ -274,6 +319,33 @@ export default function Home() {
           <div className="error-banner" role="alert">
             <Info size={15} /> {uiError ?? `Dataset check found ${dataIssues.length} invalid reference${dataIssues.length === 1 ? "" : "s"}.`}
           </div>
+        )}
+
+        {compareMode && (
+          <section className="compare-workspace" aria-label={`Compare ${compareA.name} and ${compareB.name}`}>
+            <div className="compare-title">
+              <div><span className="caption-index">COMPARE</span><strong>Element overlap</strong></div>
+              <p>Choose a slot, then select any element from the table.</p>
+              <button onClick={() => setCompareMode(false)} aria-label="Close comparison"><X size={15} /></button>
+            </div>
+            <div className="compare-elements">
+              <button className={compareSlot === 0 ? "compare-element active" : "compare-element"} onClick={() => setCompareSlot(0)}>
+                <span>A</span><strong>{compareA.symbol}</strong><div><b>{compareA.name}</b><small>{comparison.left.length} minerals</small></div>
+              </button>
+              <div className="compare-junction"><GitCompareArrows size={16} /><span>{comparison.shared.length}</span><small>shared</small></div>
+              <button className={compareSlot === 1 ? "compare-element active" : "compare-element"} onClick={() => setCompareSlot(1)}>
+                <span>B</span><strong>{compareB.symbol}</strong><div><b>{compareB.name}</b><small>{comparison.right.length} minerals</small></div>
+              </button>
+            </div>
+            <div className="compare-results">
+              <div><span>Only {compareA.symbol}</span><b>{comparison.leftOnly.length}</b></div>
+              <div className="shared-minerals">
+                <span>Shared minerals</span>
+                <div>{comparison.shared.length ? comparison.shared.slice(0, 5).map((mineral) => <button key={mineral.id} onClick={() => { setPinnedSymbol(compareA.symbol); setPinnedMineral(mineral.id); }}>{mineral.name}</button>) : <em>No shared mineral in this family filter</em>}</div>
+              </div>
+              <div><span>Only {compareB.symbol}</span><b>{comparison.rightOnly.length}</b></div>
+            </div>
+          </section>
         )}
 
         <div className="viz-layout">
@@ -317,11 +389,12 @@ export default function Home() {
                   const isActive = item.symbol === activeSymbol;
                   const isConnected = connections.has(item.symbol);
                   const isDimmed = hasRelationships && !isActive && !isConnected;
+                  const compareIndex = compareMode ? compareSymbols.indexOf(item.symbol) : -1;
                   return (
                     <button
                       key={item.symbol}
                       ref={(node) => { elementRefs.current[item.symbol] = node; }}
-                      className={`element-cell kind-${item.kind}${isActive ? " is-active" : ""}${isConnected ? " is-connected" : ""}${isDimmed ? " is-dimmed" : ""}`}
+                      className={`element-cell kind-${item.kind}${isActive ? " is-active" : ""}${isConnected ? " is-connected" : ""}${isDimmed ? " is-dimmed" : ""}${compareIndex === 0 ? " compare-a" : ""}${compareIndex === 1 ? " compare-b" : ""}`}
                       style={{ gridColumn: item.col, gridRow: item.row }}
                       onMouseEnter={() => setHoveredSymbol(item.symbol)}
                       onMouseLeave={() => setHoveredSymbol(null)}
@@ -392,6 +465,9 @@ export default function Home() {
               setFamily("all");
               setPinnedMineral(null);
               setHoveredMineral(null);
+              setCompareMode(false);
+              setCompareSymbols(["Si", "O"]);
+              setCompareSlot(1);
             }}>
               <RotateCcw size={14} /> Reset exploration
             </button>
@@ -401,7 +477,7 @@ export default function Home() {
 
       <footer className="data-note">
         <div><Info size={14} /><strong>How to read this atlas</strong></div>
-        <p>Connections represent co-occurrence within the displayed idealized mineral formulas—not chemical bonds, abundance, or phase stability. Group formulas and solid solutions are simplified to their principal listed elements.</p>
+        <p>Connections represent co-occurrence within idealized mineral formulas—not chemical bonds, abundance, or phase stability. Localities are selected type, classic, or notable specimen occurrences; open a mineral card for context and its cited source.</p>
         <a href="https://www.mindat.org/" target="_blank" rel="noreferrer">Explore mineral references <ArrowUpRight size={13} /></a>
       </footer>
     </main>
@@ -423,7 +499,9 @@ function MineralCard({
 }) {
   const meta = familyMeta[mineral.family];
   return (
-    <button
+    <article
+      role="button"
+      tabIndex={0}
       className={active ? "mineral-card active" : "mineral-card"}
       style={{ "--family-color": meta.color, "--family-glow": meta.glow } as React.CSSProperties}
       onMouseEnter={onEnter}
@@ -431,15 +509,35 @@ function MineralCard({
       onFocus={onEnter}
       onBlur={onLeave}
       onClick={onClick}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onClick();
+        }
+      }}
       aria-pressed={active}
     >
-      <span className="mineral-gem" aria-hidden="true" />
+      {mineral.image ? (
+        <span className="mineral-photo">
+          <img src={mineral.image} alt={mineral.imageAlt ?? `${mineral.name} mineral specimen`} />
+        </span>
+      ) : <span className="mineral-gem" aria-hidden="true" />}
       <span className="mineral-copy">
         <span className="mineral-topline"><strong>{mineral.name}</strong><em>{meta.label}</em></span>
         <span className="formula">{mineral.formula}</span>
         <small>{mineral.note}</small>
+        {mineral.locality && (
+          <span className="locality"><MapPin size={9} /> {mineral.locality}{mineral.country ? `, ${mineral.country}` : ""}</span>
+        )}
+        {active && mineral.localityContext && (
+          <span className="locality-detail">
+            {mineral.localityContext}
+            {mineral.sourceUrl && <a href={mineral.sourceUrl} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>Source <ArrowUpRight size={9} /></a>}
+            {mineral.imageSourceUrl && <a href={mineral.imageSourceUrl} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>Photo <ArrowUpRight size={9} /></a>}
+          </span>
+        )}
       </span>
       <ChevronRight className="card-arrow" size={15} />
-    </button>
+    </article>
   );
 }
