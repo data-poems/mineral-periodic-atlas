@@ -1,21 +1,27 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowUpRight,
   ChevronRight,
   GitCompareArrows,
+  Globe2,
   Info,
   MapPin,
   Maximize2,
   Minimize2,
   RotateCcw,
   Search,
+  SlidersHorizontal,
   Sparkles,
   X,
 } from "lucide-react";
+import LocalityMap from "@/components/LocalityMap";
 import {
   elements,
   familyMeta,
   minerals,
+  type ColorGroup,
+  type CrystalSystem,
+  type HardnessBand,
   type MineralData,
   type MineralFamily,
 } from "@/lib/mineralData";
@@ -42,6 +48,23 @@ const kindLabels = {
 
 const familyColor = (family: MineralFamily) => familyMeta[family].color;
 
+const hardnessOptions: Array<{ id: "all" | HardnessBand; label: string; detail: string }> = [
+  { id: "all", label: "Any hardness", detail: "Mohs 1–10" },
+  { id: "soft", label: "Soft", detail: "≤ 2.5" },
+  { id: "moderate", label: "Moderate", detail: "3–5" },
+  { id: "hard", label: "Hard", detail: "5.5–7" },
+  { id: "very-hard", label: "Very hard", detail: "7.5–10" },
+];
+const crystalOptions: Array<"all" | CrystalSystem> = ["all", "cubic", "tetragonal", "orthorhombic", "hexagonal", "trigonal", "monoclinic", "triclinic"];
+const colorOptions: Array<"all" | ColorGroup> = ["all", "light", "green", "blue", "warm", "dark", "metallic", "multicolor"];
+const titleCase = (value: string) => value === "all" ? "Any" : value.replace("-", " ").replace(/^./, (letter) => letter.toUpperCase());
+const hardnessLabel = ([minimum, maximum]: [number, number]) => minimum === maximum ? `${minimum}` : `${minimum}–${maximum}`;
+const initialParams = new URLSearchParams(window.location.search);
+const initialChoice = <T extends string>(key: string, choices: readonly T[], fallback: T): T => {
+  const value = initialParams.get(key) as T | null;
+  return value && choices.includes(value) ? value : fallback;
+};
+
 export default function Home() {
   const [pinnedSymbol, setPinnedSymbol] = useState("Si");
   const [hoveredSymbol, setHoveredSymbol] = useState<string | null>(null);
@@ -51,9 +74,13 @@ export default function Home() {
   const [pinnedMineral, setPinnedMineral] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [uiError, setUiError] = useState<string | null>(null);
-  const [compareMode, setCompareMode] = useState(() => new URLSearchParams(window.location.search).get("compare") === "1");
+  const [compareMode, setCompareMode] = useState(() => initialParams.get("compare") === "1");
   const [compareSymbols, setCompareSymbols] = useState<[string, string]>(["Si", "O"]);
   const [compareSlot, setCompareSlot] = useState<0 | 1>(1);
+  const [advancedOpen, setAdvancedOpen] = useState(() => initialParams.get("filters") === "1");
+  const [hardnessFilter, setHardnessFilter] = useState<"all" | HardnessBand>(() => initialChoice("hardness", hardnessOptions.map((option) => option.id), "all"));
+  const [crystalFilter, setCrystalFilter] = useState<"all" | CrystalSystem>(() => initialChoice("crystal", crystalOptions, "all"));
+  const [colorFilter, setColorFilter] = useState<"all" | ColorGroup>(() => initialChoice("color", colorOptions, "all"));
   const [lineGeometry, setLineGeometry] = useState<Array<{ symbol: string; x1: number; y1: number; x2: number; y2: number; family: MineralFamily; weight: number }>>([]);
 
   const appRef = useRef<HTMLElement | null>(null);
@@ -67,8 +94,19 @@ export default function Home() {
   const compareB = elements.find((item) => item.symbol === compareSymbols[1]) ?? elements[7];
 
   const filteredMinerals = useMemo(
-    () => (family === "all" ? minerals : minerals.filter((mineral) => mineral.family === family)),
-    [family],
+    () => minerals.filter((mineral) =>
+      (family === "all" || mineral.family === family) &&
+      (hardnessFilter === "all" || mineral.hardnessBand === hardnessFilter) &&
+      (crystalFilter === "all" || mineral.crystalSystem === crystalFilter) &&
+      (colorFilter === "all" || mineral.colorGroup === colorFilter),
+    ),
+    [family, hardnessFilter, crystalFilter, colorFilter],
+  );
+
+  const activeAdvancedFilters = [hardnessFilter, crystalFilter, colorFilter].filter((value) => value !== "all").length;
+  const filteredLocalities = useMemo(
+    () => filteredMinerals.filter((mineral) => mineral.coordinates && mineral.locality),
+    [filteredMinerals],
   );
 
   const elementMinerals = useMemo(
@@ -155,6 +193,25 @@ export default function Home() {
       return next;
     });
   };
+
+  const clearAdvancedFilters = () => {
+    setHardnessFilter("all");
+    setCrystalFilter("all");
+    setColorFilter("all");
+    setPinnedMineral(null);
+    setHoveredMineral(null);
+  };
+
+  const handleMapSelect = useCallback((mineral: MineralData) => {
+    setPinnedSymbol(mineral.elements[0] ?? "Si");
+    setPinnedMineral(mineral.id);
+    setHoveredMineral(null);
+    setUiError(null);
+  }, []);
+
+  const handleMapHover = useCallback((id: string | null) => {
+    setHoveredMineral(id);
+  }, []);
 
   useLayoutEffect(() => {
     const updateLines = () => {
@@ -296,6 +353,16 @@ export default function Home() {
             <GitCompareArrows size={14} /> Compare
           </button>
 
+          <button
+            className={advancedOpen || activeAdvancedFilters ? "advanced-toggle active" : "advanced-toggle"}
+            onClick={() => setAdvancedOpen((current) => !current)}
+            aria-expanded={advancedOpen}
+            aria-controls="advanced-filters"
+          >
+            <SlidersHorizontal size={14} /> Filters
+            {activeAdvancedFilters > 0 && <b>{activeAdvancedFilters}</b>}
+          </button>
+
           <div className="filter-scroll" aria-label="Filter by mineral family">
             {filters.map((item) => (
               <button
@@ -314,6 +381,35 @@ export default function Home() {
             ))}
           </div>
         </div>
+
+        {advancedOpen && (
+          <section className="advanced-filters" id="advanced-filters" aria-label="Advanced mineral filters">
+            <div className="filter-intro">
+              <span className="caption-index">FILTER</span>
+              <div><strong>Refine specimens</strong><small>Traits reflect typical or diagnostic properties.</small></div>
+            </div>
+            <label>
+              <span>Mohs hardness</span>
+              <select value={hardnessFilter} onChange={(event) => { setHardnessFilter(event.target.value as "all" | HardnessBand); setPinnedMineral(null); }}>
+                {hardnessOptions.map((option) => <option key={option.id} value={option.id}>{option.label} · {option.detail}</option>)}
+              </select>
+            </label>
+            <label>
+              <span>Crystal system</span>
+              <select value={crystalFilter} onChange={(event) => { setCrystalFilter(event.target.value as "all" | CrystalSystem); setPinnedMineral(null); }}>
+                {crystalOptions.map((option) => <option key={option} value={option}>{titleCase(option)}</option>)}
+              </select>
+            </label>
+            <label>
+              <span>Typical color</span>
+              <select value={colorFilter} onChange={(event) => { setColorFilter(event.target.value as "all" | ColorGroup); setPinnedMineral(null); }}>
+                {colorOptions.map((option) => <option key={option} value={option}>{titleCase(option)}</option>)}
+              </select>
+            </label>
+            <div className="filter-result" aria-live="polite"><b>{filteredMinerals.length}</b><span>minerals</span><i /> <b>{filteredLocalities.length}</b><span>mapped</span></div>
+            <button className="clear-filters" onClick={clearAdvancedFilters} disabled={!activeAdvancedFilters}><RotateCcw size={12} /> Clear</button>
+          </section>
+        )}
 
         {(uiError || dataIssues.length > 0) && (
           <div className="error-banner" role="alert">
@@ -453,8 +549,8 @@ export default function Home() {
                 <div className="empty-state">
                   <span className="empty-orbit" />
                   <h3>No reference match</h3>
-                  <p>No mineral in the current {family === "all" ? "dataset" : familyMeta[family].label.toLowerCase()} filter contains {activeElement.name}.</p>
-                  <button onClick={() => setFamily("all")}>Show all families <ChevronRight size={14} /></button>
+                  <p>No mineral in the current filter combination contains {activeElement.name}.</p>
+                  <button onClick={() => { setFamily("all"); clearAdvancedFilters(); }}>Clear all filters <ChevronRight size={14} /></button>
                 </div>
               )}
             </div>
@@ -468,11 +564,35 @@ export default function Home() {
               setCompareMode(false);
               setCompareSymbols(["Si", "O"]);
               setCompareSlot(1);
+              setAdvancedOpen(false);
+              setHardnessFilter("all");
+              setCrystalFilter("all");
+              setColorFilter("all");
             }}>
               <RotateCcw size={14} /> Reset exploration
             </button>
           </aside>
         </div>
+      </section>
+
+      <section className="map-section" aria-label="World mineral locality map">
+        <div className="map-heading">
+          <div>
+            <p className="eyebrow"><Globe2 size={13} /> Specimen geography</p>
+            <h2>Minerals have<br /><i>an address.</i></h2>
+          </div>
+          <div className="map-heading-copy">
+            <strong>{filteredLocalities.length.toString().padStart(2, "0")}</strong>
+            <span>visible localities</span>
+            <p>The map follows every active family and trait filter. Hover for a field label; click a marker to inspect its mineral.</p>
+          </div>
+        </div>
+        <LocalityMap
+          minerals={filteredMinerals}
+          selectedId={pinnedMineral}
+          onSelect={handleMapSelect}
+          onHover={handleMapHover}
+        />
       </section>
 
       <footer className="data-note">
@@ -526,6 +646,11 @@ function MineralCard({
         <span className="mineral-topline"><strong>{mineral.name}</strong><em>{meta.label}</em></span>
         <span className="formula">{mineral.formula}</span>
         <small>{mineral.note}</small>
+        <span className="mineral-traits">
+          <i>H {hardnessLabel(mineral.hardness)}</i>
+          <i>{titleCase(mineral.crystalSystem)}</i>
+          <i>{titleCase(mineral.colorGroup)}</i>
+        </span>
         {mineral.locality && (
           <span className="locality"><MapPin size={9} /> {mineral.locality}{mineral.country ? `, ${mineral.country}` : ""}</span>
         )}

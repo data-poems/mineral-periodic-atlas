@@ -8,6 +8,9 @@ export type MineralFamily =
   | "sulfate"
   | "phosphate"
   | "native";
+export type CrystalSystem = "cubic" | "tetragonal" | "orthorhombic" | "hexagonal" | "trigonal" | "monoclinic" | "triclinic";
+export type ColorGroup = "light" | "green" | "blue" | "warm" | "dark" | "metallic" | "multicolor";
+export type HardnessBand = "soft" | "moderate" | "hard" | "very-hard";
 
 export type ElementData = {
   number: number;
@@ -34,6 +37,11 @@ export type MineralData = {
   imageAlt?: string;
   imageCredit?: string;
   imageSourceUrl?: string;
+  hardness: [number, number];
+  hardnessBand: HardnessBand;
+  crystalSystem: CrystalSystem;
+  colorGroup: ColorGroup;
+  coordinates?: { lat: number; lng: number };
 };
 
 const e = (
@@ -57,7 +65,9 @@ export const elements: ElementData[] = [
   e(89, "Ac", "Actinium", 3, 9, "actinide"), e(90, "Th", "Thorium", 4, 9, "actinide"), e(91, "Pa", "Protactinium", 5, 9, "actinide"), e(92, "U", "Uranium", 6, 9, "actinide"), e(93, "Np", "Neptunium", 7, 9, "actinide"), e(94, "Pu", "Plutonium", 8, 9, "actinide"), e(95, "Am", "Americium", 9, 9, "actinide"), e(96, "Cm", "Curium", 10, 9, "actinide"), e(97, "Bk", "Berkelium", 11, 9, "actinide"), e(98, "Cf", "Californium", 12, 9, "actinide"), e(99, "Es", "Einsteinium", 13, 9, "actinide"), e(100, "Fm", "Fermium", 14, 9, "actinide"), e(101, "Md", "Mendelevium", 15, 9, "actinide"), e(102, "No", "Nobelium", 16, 9, "actinide"), e(103, "Lr", "Lawrencium", 17, 9, "actinide"),
 ];
 
-export const minerals: MineralData[] = [
+type MineralBase = Omit<MineralData, "hardness" | "hardnessBand" | "crystalSystem" | "colorGroup" | "coordinates">;
+
+const baseMinerals: MineralBase[] = [
   { id: "quartz", name: "Quartz", formula: "SiO₂", family: "silicate", elements: ["Si", "O"], note: "The most abundant framework silica mineral.", locality: "Hot Springs", country: "United States", localityContext: "Arkansas is a classic source of clear rock-crystal quartz.", sourceName: "Mindat", sourceUrl: "https://www.mindat.org/min-3337.html", image: "/manus-storage/quartz_d2afe4d5.jpg", imageAlt: "Clear quartz crystal cluster on a black background", imageCredit: "Wikimedia Commons", imageSourceUrl: "https://commons.wikimedia.org/wiki/Category:Quartz" },
   { id: "albite", name: "Albite", formula: "NaAlSi₃O₈", family: "silicate", elements: ["Na", "Al", "Si", "O"], note: "Sodium end-member of plagioclase feldspar." },
   { id: "orthoclase", name: "Orthoclase", formula: "KAlSi₃O₈", family: "silicate", elements: ["K", "Al", "Si", "O"], note: "A potassium feldspar common in granitic rocks." },
@@ -116,6 +126,90 @@ export const minerals: MineralData[] = [
   { id: "silver", name: "Native silver", formula: "Ag", family: "native", elements: ["Ag"], note: "A malleable native metal that may form spectacular wires and crystals.", locality: "Kongsberg Silver District", country: "Norway", localityContext: "The world’s most celebrated locality for wire-silver specimens.", sourceName: "Mindat", sourceUrl: "https://www.mindat.org/min-3664.html" },
   { id: "diamond", name: "Diamond", formula: "C", family: "native", elements: ["C"], note: "The hardest natural substance, built from a three-dimensional carbon lattice.", locality: "Cullinan Mine, Gauteng", country: "South Africa", localityContext: "Source of the 3,106-carat Cullinan, the largest gem-quality rough diamond found.", sourceName: "GIA", sourceUrl: "https://www.gia.edu/gems-gemology/summer-2006-cullinan-diamond-scarratt" },
 ];
+
+const band = (minimum: number, maximum: number): HardnessBand => {
+  if (maximum <= 2.5) return "soft";
+  if (maximum <= 5) return "moderate";
+  if (maximum < 7.5) return "hard";
+  return "very-hard";
+};
+
+type TraitData = {
+  hardness: [number, number];
+  crystalSystem: CrystalSystem;
+  colorGroup: ColorGroup;
+  coordinates?: { lat: number; lng: number };
+};
+
+const mineralTraits: Record<string, TraitData> = {
+  quartz: { hardness: [7, 7], crystalSystem: "trigonal", colorGroup: "light", coordinates: { lat: 34.504, lng: -93.055 } },
+  albite: { hardness: [6, 6.5], crystalSystem: "triclinic", colorGroup: "light" },
+  orthoclase: { hardness: [6, 6], crystalSystem: "monoclinic", colorGroup: "warm" },
+  anorthite: { hardness: [6, 6.5], crystalSystem: "triclinic", colorGroup: "light" },
+  olivine: { hardness: [6.5, 7], crystalSystem: "orthorhombic", colorGroup: "green" },
+  beryl: { hardness: [7.5, 8], crystalSystem: "hexagonal", colorGroup: "green" },
+  kaolinite: { hardness: [2, 2.5], crystalSystem: "triclinic", colorGroup: "light" },
+  muscovite: { hardness: [2, 2.5], crystalSystem: "monoclinic", colorGroup: "light" },
+  talc: { hardness: [1, 1], crystalSystem: "monoclinic", colorGroup: "light" },
+  garnet: { hardness: [6.5, 7.5], crystalSystem: "cubic", colorGroup: "warm" },
+  calcite: { hardness: [3, 3], crystalSystem: "trigonal", colorGroup: "light", coordinates: { lat: 36.248, lng: -85.955 } },
+  dolomite: { hardness: [3.5, 4], crystalSystem: "trigonal", colorGroup: "light" },
+  malachite: { hardness: [3.5, 4], crystalSystem: "monoclinic", colorGroup: "green" },
+  azurite: { hardness: [3.5, 4], crystalSystem: "monoclinic", colorGroup: "blue" },
+  rhodochrosite: { hardness: [3.5, 4], crystalSystem: "trigonal", colorGroup: "warm" },
+  pyrite: { hardness: [6, 6.5], crystalSystem: "cubic", colorGroup: "metallic", coordinates: { lat: 42.311, lng: -2.101 } },
+  chalcopyrite: { hardness: [3.5, 4], crystalSystem: "tetragonal", colorGroup: "metallic" },
+  galena: { hardness: [2.5, 2.75], crystalSystem: "cubic", colorGroup: "metallic", coordinates: { lat: 37.714, lng: -91.129 } },
+  sphalerite: { hardness: [3.5, 4], crystalSystem: "cubic", colorGroup: "warm" },
+  molybdenite: { hardness: [1, 1.5], crystalSystem: "hexagonal", colorGroup: "metallic" },
+  cinnabar: { hardness: [2, 2.5], crystalSystem: "trigonal", colorGroup: "warm" },
+  hematite: { hardness: [5.5, 6.5], crystalSystem: "trigonal", colorGroup: "metallic", coordinates: { lat: -18.513, lng: -44.556 } },
+  magnetite: { hardness: [5.5, 6.5], crystalSystem: "cubic", colorGroup: "dark" },
+  corundum: { hardness: [9, 9], crystalSystem: "trigonal", colorGroup: "multicolor" },
+  rutile: { hardness: [6, 6.5], crystalSystem: "tetragonal", colorGroup: "warm" },
+  chromite: { hardness: [5.5, 5.5], crystalSystem: "cubic", colorGroup: "dark" },
+  cassiterite: { hardness: [6, 7], crystalSystem: "tetragonal", colorGroup: "dark" },
+  ilmenite: { hardness: [5, 6], crystalSystem: "trigonal", colorGroup: "dark" },
+  halite: { hardness: [2.5, 2.5], crystalSystem: "cubic", colorGroup: "light" },
+  fluorite: { hardness: [4, 4], crystalSystem: "cubic", colorGroup: "multicolor", coordinates: { lat: 54.73, lng: -2.0 } },
+  sylvite: { hardness: [2, 2.5], crystalSystem: "cubic", colorGroup: "light" },
+  gypsum: { hardness: [2, 2], crystalSystem: "monoclinic", colorGroup: "light" },
+  barite: { hardness: [3, 3.5], crystalSystem: "orthorhombic", colorGroup: "light" },
+  apatite: { hardness: [5, 5], crystalSystem: "hexagonal", colorGroup: "multicolor" },
+  scheelite: { hardness: [4.5, 5], crystalSystem: "tetragonal", colorGroup: "light" },
+  gold: { hardness: [2.5, 3], crystalSystem: "cubic", colorGroup: "metallic" },
+  copper: { hardness: [2.5, 3], crystalSystem: "cubic", colorGroup: "metallic" },
+  graphite: { hardness: [1, 2], crystalSystem: "hexagonal", colorGroup: "dark" },
+  sulfur: { hardness: [1.5, 2.5], crystalSystem: "orthorhombic", colorGroup: "warm" },
+  zircon: { hardness: [7.5, 7.5], crystalSystem: "tetragonal", colorGroup: "warm", coordinates: { lat: -26.2, lng: 117.2 } },
+  spodumene: { hardness: [6.5, 7], crystalSystem: "monoclinic", colorGroup: "light", coordinates: { lat: 58.963, lng: 18.326 } },
+  topaz: { hardness: [8, 8], crystalSystem: "orthorhombic", colorGroup: "multicolor", coordinates: { lat: -20.385, lng: -43.503 } },
+  jadeite: { hardness: [6.5, 7], crystalSystem: "monoclinic", colorGroup: "green", coordinates: { lat: 25.613, lng: 96.319 } },
+  chrysotile: { hardness: [2.5, 3], crystalSystem: "monoclinic", colorGroup: "green", coordinates: { lat: 50.444, lng: 16.875 } },
+  tourmaline: { hardness: [7, 7.5], crystalSystem: "trigonal", colorGroup: "multicolor", coordinates: { lat: 42.783, lng: 10.284 } },
+  siderite: { hardness: [3.5, 4.5], crystalSystem: "trigonal", colorGroup: "warm", coordinates: { lat: 51.58, lng: -3.58 } },
+  smithsonite: { hardness: [4, 4.5], crystalSystem: "trigonal", colorGroup: "multicolor", coordinates: { lat: 34.063, lng: -107.053 } },
+  bornite: { hardness: [3, 3.25], crystalSystem: "orthorhombic", colorGroup: "multicolor", coordinates: { lat: 50.369, lng: 12.913 } },
+  pentlandite: { hardness: [3.5, 4], crystalSystem: "cubic", colorGroup: "metallic", coordinates: { lat: 61.257, lng: 9.489 } },
+  cuprite: { hardness: [3.5, 4], crystalSystem: "cubic", colorGroup: "warm", coordinates: { lat: 52.46, lng: -3.94 } },
+  spinel: { hardness: [8, 8], crystalSystem: "cubic", colorGroup: "multicolor", coordinates: { lat: 6.68, lng: 80.4 } },
+  cryolite: { hardness: [2.5, 3], crystalSystem: "monoclinic", colorGroup: "light", coordinates: { lat: 61.2, lng: -48.17 } },
+  celestine: { hardness: [3, 3.5], crystalSystem: "orthorhombic", colorGroup: "blue", coordinates: { lat: 40.6, lng: -78.34 } },
+  turquoise: { hardness: [5, 6], crystalSystem: "triclinic", colorGroup: "blue", coordinates: { lat: 36.214, lng: 58.793 } },
+  monazite: { hardness: [5, 5.5], crystalSystem: "monoclinic", colorGroup: "warm", coordinates: { lat: 55.16, lng: 60.13 } },
+  silver: { hardness: [2.5, 3], crystalSystem: "cubic", colorGroup: "metallic", coordinates: { lat: 59.669, lng: 9.651 } },
+  diamond: { hardness: [10, 10], crystalSystem: "cubic", colorGroup: "light", coordinates: { lat: -25.672, lng: 28.523 } },
+};
+
+export const minerals: MineralData[] = baseMinerals.map((mineral) => {
+  const traits = mineralTraits[mineral.id];
+  if (!traits) throw new Error(`Missing filter traits for ${mineral.id}`);
+  return {
+    ...mineral,
+    ...traits,
+    hardnessBand: band(...traits.hardness),
+  };
+});
 
 export const familyMeta: Record<MineralFamily, { label: string; color: string; glow: string }> = {
   silicate: { label: "Silicates", color: "#68d8c3", glow: "rgba(104,216,195,.42)" },

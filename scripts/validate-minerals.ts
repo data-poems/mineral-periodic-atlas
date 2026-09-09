@@ -14,7 +14,17 @@ for (const mineral of minerals) {
   for (const symbol of mineral.elements) {
     if (!elementSymbols.has(symbol)) problems.push(`Unknown symbol ${symbol} in ${mineral.name}`);
   }
+  if (!mineral.hardness || mineral.hardness[0] < 1 || mineral.hardness[1] > 10 || mineral.hardness[0] > mineral.hardness[1]) {
+    problems.push(`Invalid Mohs hardness range: ${mineral.name}`);
+  }
+  if (!mineral.hardnessBand || !mineral.crystalSystem || !mineral.colorGroup) {
+    problems.push(`Incomplete filter traits: ${mineral.name}`);
+  }
   if (mineral.locality && !mineral.sourceUrl) problems.push(`Locality lacks source URL: ${mineral.name}`);
+  if (mineral.locality && !mineral.coordinates) problems.push(`Locality lacks coordinates: ${mineral.name}`);
+  if (mineral.coordinates && (Math.abs(mineral.coordinates.lat) > 90 || Math.abs(mineral.coordinates.lng) > 180)) {
+    problems.push(`Invalid map coordinates: ${mineral.name}`);
+  }
   if (mineral.image && (!mineral.imageAlt || !mineral.imageCredit || !mineral.imageSourceUrl)) {
     problems.push(`Image attribution incomplete: ${mineral.name}`);
   }
