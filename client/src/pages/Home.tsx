@@ -3,7 +3,6 @@ import {
   ArrowUpRight,
   ChevronRight,
   GitCompareArrows,
-  Globe2,
   Info,
   MapPin,
   Maximize2,
@@ -11,7 +10,6 @@ import {
   RotateCcw,
   Search,
   SlidersHorizontal,
-  Sparkles,
   X,
 } from "lucide-react";
 import LocalityMap from "@/components/LocalityMap";
@@ -34,6 +32,7 @@ const filters: Array<{ id: "all" | MineralFamily; label: string }> = [
   { id: "oxide", label: "Oxides" },
   { id: "halide", label: "Halides" },
   { id: "sulfate", label: "Sulfates" },
+  { id: "nitrate", label: "Nitrates" },
   { id: "phosphate", label: "Phosphates" },
   { id: "native", label: "Native" },
 ];
@@ -60,13 +59,14 @@ const colorOptions: Array<"all" | ColorGroup> = ["all", "light", "green", "blue"
 const titleCase = (value: string) => value === "all" ? "Any" : value.replace("-", " ").replace(/^./, (letter) => letter.toUpperCase());
 const hardnessLabel = ([minimum, maximum]: [number, number]) => minimum === maximum ? `${minimum}` : `${minimum}–${maximum}`;
 const initialParams = new URLSearchParams(window.location.search);
+const initialElement = elements.some((element) => element.symbol === initialParams.get("element")) ? initialParams.get("element")! : "Si";
 const initialChoice = <T extends string>(key: string, choices: readonly T[], fallback: T): T => {
   const value = initialParams.get(key) as T | null;
   return value && choices.includes(value) ? value : fallback;
 };
 
 export default function Home() {
-  const [pinnedSymbol, setPinnedSymbol] = useState("Si");
+  const [pinnedSymbol, setPinnedSymbol] = useState(initialElement);
   const [hoveredSymbol, setHoveredSymbol] = useState<string | null>(null);
   const [family, setFamily] = useState<"all" | MineralFamily>("all");
   const [query, setQuery] = useState("");
@@ -104,6 +104,10 @@ export default function Home() {
   );
 
   const activeAdvancedFilters = [hardnessFilter, crystalFilter, colorFilter].filter((value) => value !== "all").length;
+  const elementCoverage = useMemo(
+    () => elements.filter((element) => minerals.some((mineral) => mineral.elements.includes(element.symbol))).length,
+    [],
+  );
   const filteredLocalities = useMemo(
     () => filteredMinerals.filter((mineral) => mineral.coordinates && mineral.locality),
     [filteredMinerals],
@@ -285,38 +289,21 @@ export default function Home() {
 
   return (
     <main className="atlas-app" ref={appRef}>
-      <div className="ambient ambient-one" />
-      <div className="ambient ambient-two" />
-
       <header className="topbar">
-        <a className="brand" href="#top" aria-label="Mineral Periodic Atlas home">
-          <span className="brand-mark" aria-hidden="true"><span>Si</span></span>
-          <span>
-            <strong>MINERAL</strong>
-            <em>Periodic Atlas</em>
-          </span>
-        </a>
+        <div className="app-identity">
+          <h1>Mineral connections</h1>
+          <span>Hover element · click to pin</span>
+        </div>
         <div className="topbar-meta" aria-label="Dataset summary">
           <span><b>{elements.length}</b> elements</span>
-          <span><b>{minerals.length}</b> reference minerals</span>
-          <span><b>{minerals.filter((mineral) => mineral.locality).length}</b> localities</span>
+          <span><b>{elementCoverage}</b> represented</span>
+          <span><b>{minerals.length}</b> minerals</span>
         </div>
         <button className="icon-button" onClick={toggleFullscreen} aria-label={isFullscreen ? "Exit full screen" : "View full screen"}>
           {isFullscreen ? <Minimize2 size={17} /> : <Maximize2 size={17} />}
           <span>{isFullscreen ? "Exit" : "Full screen"}</span>
         </button>
       </header>
-
-      <section className="intro" id="top">
-        <div>
-          <p className="eyebrow"><Sparkles size={13} /> Interactive mineral chemistry</p>
-          <h1>Trace the chemistry<br />inside <i>stone.</i></h1>
-        </div>
-        <div className="intro-copy">
-          <p>Hover over any element to reveal the other elements it commonly combines with in selected minerals.</p>
-          <div className="interaction-key"><span className="pulse-dot" /> Hover to explore · click to pin</div>
-        </div>
-      </section>
 
       <section className="explorer" aria-label="Mineral relationship explorer">
         <div className="controls-row">
@@ -386,7 +373,7 @@ export default function Home() {
           <section className="advanced-filters" id="advanced-filters" aria-label="Advanced mineral filters">
             <div className="filter-intro">
               <span className="caption-index">FILTER</span>
-              <div><strong>Refine specimens</strong><small>Traits reflect typical or diagnostic properties.</small></div>
+              <div><strong>Mineral properties</strong><small>Typical values</small></div>
             </div>
             <label>
               <span>Mohs hardness</span>
@@ -486,6 +473,7 @@ export default function Home() {
                   const isConnected = connections.has(item.symbol);
                   const isDimmed = hasRelationships && !isActive && !isConnected;
                   const compareIndex = compareMode ? compareSymbols.indexOf(item.symbol) : -1;
+                  const mineralCount = filteredMinerals.filter((mineral) => mineral.elements.includes(item.symbol)).length;
                   return (
                     <button
                       key={item.symbol}
@@ -497,10 +485,13 @@ export default function Home() {
                       onFocus={() => setHoveredSymbol(item.symbol)}
                       onBlur={() => setHoveredSymbol(null)}
                       onClick={() => chooseElement(item.symbol)}
-                      aria-label={`${item.name}, ${item.symbol}, atomic number ${item.number}`}
+                      aria-label={`${item.name}, ${item.symbol}, atomic number ${item.number}, ${mineralCount} matching minerals`}
                       aria-pressed={pinnedSymbol === item.symbol}
                     >
                       <span className="atomic-number">{item.number}</span>
+                      {isConnected
+                        ? <span className="link-count" title={`${connections.get(item.symbol)?.count ?? 0} shared minerals`}>×{connections.get(item.symbol)?.count}</span>
+                        : mineralCount > 0 && <span className="mineral-count" title={`${mineralCount} matching minerals`}>{mineralCount}</span>}
                       <strong>{item.symbol}</strong>
                       <small>{item.name}</small>
                     </button>
@@ -513,7 +504,7 @@ export default function Home() {
               {Object.entries(kindLabels).map(([kind, label]) => (
                 <span key={kind}><i className={`legend-swatch kind-${kind}`} />{label}</span>
               ))}
-              <span className="legend-note"><Info size={12} /> Line weight reflects repeated associations</span>
+              <span className="legend-note"><Info size={12} /> Formula co-occurrence · width = frequency</span>
             </div>
           </section>
 
@@ -576,16 +567,9 @@ export default function Home() {
       </section>
 
       <section className="map-section" aria-label="World mineral locality map">
-        <div className="map-heading">
-          <div>
-            <p className="eyebrow"><Globe2 size={13} /> Specimen geography</p>
-            <h2>Minerals have<br /><i>an address.</i></h2>
-          </div>
-          <div className="map-heading-copy">
-            <strong>{filteredLocalities.length.toString().padStart(2, "0")}</strong>
-            <span>visible localities</span>
-            <p>The map follows every active family and trait filter. Hover for a field label; click a marker to inspect its mineral.</p>
-          </div>
+        <div className="map-toolbar">
+          <strong>Localities</strong>
+          <span>{filteredLocalities.length} shown · follows active filters · click a marker to inspect</span>
         </div>
         <LocalityMap
           minerals={filteredMinerals}
@@ -594,12 +578,6 @@ export default function Home() {
           onHover={handleMapHover}
         />
       </section>
-
-      <footer className="data-note">
-        <div><Info size={14} /><strong>How to read this atlas</strong></div>
-        <p>Connections represent co-occurrence within idealized mineral formulas—not chemical bonds, abundance, or phase stability. Localities are selected type, classic, or notable specimen occurrences; open a mineral card for context and its cited source.</p>
-        <a href="https://www.mindat.org/" target="_blank" rel="noreferrer">Explore mineral references <ArrowUpRight size={13} /></a>
-      </footer>
     </main>
   );
 }
@@ -654,9 +632,9 @@ function MineralCard({
         {mineral.locality && (
           <span className="locality"><MapPin size={9} /> {mineral.locality}{mineral.country ? `, ${mineral.country}` : ""}</span>
         )}
-        {active && mineral.localityContext && (
+        {active && (mineral.localityContext || mineral.sourceUrl || mineral.imageSourceUrl) && (
           <span className="locality-detail">
-            {mineral.localityContext}
+            {mineral.localityContext && <span>{mineral.localityContext}</span>}
             {mineral.sourceUrl && <a href={mineral.sourceUrl} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>Source <ArrowUpRight size={9} /></a>}
             {mineral.imageSourceUrl && <a href={mineral.imageSourceUrl} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>Photo <ArrowUpRight size={9} /></a>}
           </span>

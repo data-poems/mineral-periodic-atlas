@@ -285,6 +285,8 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 }
 .element-cell::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 2px; background: var(--kind-color); opacity: .45; }
 .element-cell .atomic-number { grid-column: 1; color: #777d76; font: 500 7px/1 "IBM Plex Mono", monospace; }
+.mineral-count { position: absolute; right: 3px; bottom: 3px; color: color-mix(in srgb, var(--kind-color) 65%, #4f5750); font: 600 6px/1 "IBM Plex Mono", monospace; }
+.link-count { position: absolute; right: 3px; bottom: 3px; color: #d7fff6; font: 650 6px/1 "IBM Plex Mono", monospace; text-shadow: 0 0 7px #82dbc9; }
 .element-cell strong { grid-column: 2; grid-row: 1 / 3; align-self: center; color: #d8d6ca; font: 600 16px/1 "IBM Plex Mono", monospace; letter-spacing: -.04em; }
 .element-cell small { grid-column: 1; max-width: 100%; margin-top: 5px; overflow: hidden; color: #6f756e; font: 400 6.5px/1 "IBM Plex Mono", monospace; text-overflow: ellipsis; white-space: nowrap; }
 .element-cell:hover, .element-cell:focus-visible { z-index: 12; border-color: var(--kind-color); background: color-mix(in srgb, var(--kind-color) 9%, #151a16); transform: translateY(-2px); box-shadow: 0 6px 22px rgba(0,0,0,.34), inset 0 0 20px color-mix(in srgb, var(--kind-color) 7%, transparent); }
@@ -446,6 +448,50 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 .locality-row > a { display: grid; place-items: center; color: #6d746d; }
 .locality-row > a:hover { color: var(--marker-color); }
 
+/* Compact instrument layout: keep only the controls, visualization, results, and map. */
+.atlas-app {
+  padding: 0 12px 12px;
+  background:
+    linear-gradient(rgba(255,255,255,.011) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.011) 1px, transparent 1px),
+    #0d110e;
+  background-size: 32px 32px;
+}
+.topbar {
+  position: relative;
+  z-index: 40;
+  height: 54px;
+  grid-template-columns: minmax(230px, 1fr) auto minmax(110px, 1fr);
+  border-bottom: 0;
+}
+.app-identity { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
+.app-identity h1 { margin: 0; color: #e7e4d9; font: 560 14px/1 "Instrument Sans", sans-serif; letter-spacing: -.01em; }
+.app-identity span { color: #727971; font: 500 7px/1 "IBM Plex Mono", monospace; text-transform: uppercase; letter-spacing: .06em; white-space: nowrap; }
+.topbar-meta { gap: 18px; font-size: 8px; }
+.icon-button { padding: 7px 10px; font-size: 9px; }
+.explorer, .map-section { border-color: rgba(232,228,211,.12); background: rgba(12,16,13,.92); box-shadow: none; backdrop-filter: none; }
+.controls-row { min-height: 54px; padding: 7px 8px; gap: 8px; }
+.search-wrap { flex-basis: 205px; height: 36px; }
+.compare-toggle, .advanced-toggle { height: 36px; }
+.filter-chip { height: 32px; padding-inline: 10px; font-size: 8px; }
+.advanced-filters { padding: 10px 12px; }
+.viz-layout { min-height: 0; grid-template-columns: minmax(0, 1fr) 330px; }
+.table-panel { padding: 10px 11px 8px; }
+.table-scroll { padding-top: 10px; }
+.periodic-grid { min-width: 910px; grid-template-rows: repeat(9, minmax(47px, 1fr)); min-height: 510px; }
+.element-cell { padding: 5px; }
+.detail-panel { padding: 10px; }
+.element-portrait { min-height: 88px; grid-template-columns: 68px 1fr; padding: 11px; }
+.element-portrait > strong { font-size: 38px; }
+.detail-heading { height: 40px; }
+.mineral-list { max-height: 420px; min-height: 300px; }
+.map-section { margin-top: 10px; }
+.map-toolbar { min-height: 45px; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 0 14px; border-bottom: 1px solid rgba(232,228,211,.11); }
+.map-toolbar strong { color: #d9d6cb; font: 560 11px "Instrument Sans", sans-serif; }
+.map-toolbar span { color: #737a72; font: 500 7.5px "IBM Plex Mono", monospace; text-transform: uppercase; letter-spacing: .05em; text-align: right; }
+.locality-map-layout { min-height: 350px; grid-template-columns: minmax(0, 1fr) 330px; }
+.atlas-map, .projection-map, .map-error, .locality-index { height: 350px; }
+
 @media (max-width: 980px) {
   .topbar { grid-template-columns: 1fr auto; }
   .topbar-meta { display: none; }
@@ -468,22 +514,23 @@ button:focus-visible, a:focus-visible, input:focus-visible {
   .mineral-list { grid-column: 2; max-height: 250px; }
   .reset-button { grid-column: 1 / 3; }
   .data-note { grid-template-columns: 1fr; gap: 8px; }
+  .topbar { grid-template-columns: 1fr auto; }
+  .app-identity span { display: none; }
+  .viz-layout { min-height: 0; }
+  .mineral-list { max-height: 280px; min-height: 180px; }
 }
 
 @media (max-width: 640px) {
-  .atlas-app { padding-inline: 12px; }
-  .topbar { height: 64px; }
-  .brand-mark { width: 34px; }
+  .atlas-app { padding: 0 6px 6px; }
+  .topbar { height: 46px; }
+  .app-identity h1 { font-size: 12px; }
   .icon-button span { display: none; }
-  .intro { padding: 32px 4px 25px; }
-  .intro h1 { font-size: clamp(42px, 14vw, 62px); }
-  .intro-copy { align-items: flex-start; flex-direction: column; }
-  .controls-row { align-items: stretch; flex-direction: column; }
-  .search-wrap { flex-basis: 40px; width: 100%; }
+  .controls-row { display: grid; grid-template-columns: 1fr 1fr; align-items: stretch; }
+  .search-wrap { grid-column: 1 / 3; flex-basis: 36px; width: 100%; height: 36px; }
   .compare-toggle { width: 100%; justify-content: center; }
   .advanced-toggle { width: 100%; justify-content: center; }
   .search-results { width: 100%; }
-  .filter-scroll { width: 100%; }
+  .filter-scroll { grid-column: 1 / 3; width: 100%; }
   .compare-workspace { display: block; }
   .compare-title { min-height: 78px; border-right: 0; border-bottom: 1px solid rgba(232,228,211,.1); }
   .compare-title p { max-width: 260px; }
@@ -508,9 +555,9 @@ button:focus-visible, a:focus-visible, input:focus-visible {
   .mineral-list { max-height: 330px; }
   .reset-button { margin-top: 12px; }
   .data-note { padding-inline: 5px; }
-  .map-section { margin-top: 24px; }
-  .map-heading { grid-template-columns: 1fr; gap: 20px; padding: 23px 18px 20px; }
-  .map-heading-copy { justify-self: start; }
+  .map-section { margin-top: 6px; }
+  .map-toolbar { align-items: flex-start; flex-direction: column; gap: 3px; padding-block: 9px; }
+  .map-toolbar span { text-align: left; }
   .locality-map-layout { display: block; }
   .map-frame { border-right: 0; border-bottom: 1px solid rgba(232,228,211,.11); }
   .atlas-map, .map-error, .projection-map { height: 340px; }
