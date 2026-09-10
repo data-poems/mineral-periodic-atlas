@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import LocalityMap from "@/components/LocalityMap";
+import { parseAtlasQuery, serializeAtlasQuery } from "@/lib/atlasState";
 import {
   elements,
   familyMeta,
@@ -23,6 +24,8 @@ import {
   type MineralData,
   type MineralFamily,
 } from "@/lib/mineralData";
+import { connectionSymbols, distinctiveElement, listsMineralForElement } from "@/lib/occupancy";
+import { publicUrl } from "@/lib/publicUrl";
 
 const filters: Array<{ id: "all" | MineralFamily; label: string }> = [
   { id: "all", label: "All families" },
@@ -58,29 +61,30 @@ const crystalOptions: Array<"all" | CrystalSystem> = ["all", "cubic", "tetragona
 const colorOptions: Array<"all" | ColorGroup> = ["all", "light", "green", "blue", "warm", "dark", "metallic", "multicolor"];
 const titleCase = (value: string) => value === "all" ? "Any" : value.replace("-", " ").replace(/^./, (letter) => letter.toUpperCase());
 const hardnessLabel = ([minimum, maximum]: [number, number]) => minimum === maximum ? `${minimum}` : `${minimum}–${maximum}`;
-const initialParams = new URLSearchParams(window.location.search);
-const initialElement = elements.some((element) => element.symbol === initialParams.get("element")) ? initialParams.get("element")! : "Si";
-const initialChoice = <T extends string>(key: string, choices: readonly T[], fallback: T): T => {
-  const value = initialParams.get(key) as T | null;
-  return value && choices.includes(value) ? value : fallback;
+const atlasValidity = {
+  elements: new Set(elements.map((element) => element.symbol)),
+  minerals: new Set(minerals.map((mineral) => mineral.id)),
 };
+const initialQuery = parseAtlasQuery(window.location.search, atlasValidity);
+const initialChoice = <T extends string>(value: string, choices: readonly T[], fallback: T): T =>
+  choices.includes(value as T) ? (value as T) : fallback;
 
 export default function Home() {
-  const [pinnedSymbol, setPinnedSymbol] = useState(initialElement);
+  const [pinnedSymbol, setPinnedSymbol] = useState(initialQuery.element);
   const [hoveredSymbol, setHoveredSymbol] = useState<string | null>(null);
-  const [family, setFamily] = useState<"all" | MineralFamily>("all");
+  const [family, setFamily] = useState<"all" | MineralFamily>(() => initialChoice(initialQuery.family, filters.map((item) => item.id), "all"));
   const [query, setQuery] = useState("");
   const [hoveredMineral, setHoveredMineral] = useState<string | null>(null);
-  const [pinnedMineral, setPinnedMineral] = useState<string | null>(null);
+  const [pinnedMineral, setPinnedMineral] = useState<string | null>(initialQuery.mineral);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [uiError, setUiError] = useState<string | null>(null);
-  const [compareMode, setCompareMode] = useState(() => initialParams.get("compare") === "1");
-  const [compareSymbols, setCompareSymbols] = useState<[string, string]>(["Si", "O"]);
+  const [compareMode, setCompareMode] = useState(() => initialQuery.compare !== null);
+  const [compareSymbols, setCompareSymbols] = useState<[string, string]>(initialQuery.compare ?? ["Si", "O"]);
   const [compareSlot, setCompareSlot] = useState<0 | 1>(1);
-  const [advancedOpen, setAdvancedOpen] = useState(() => initialParams.get("filters") === "1");
-  const [hardnessFilter, setHardnessFilter] = useState<"all" | HardnessBand>(() => initialChoice("hardness", hardnessOptions.map((option) => option.id), "all"));
-  const [crystalFilter, setCrystalFilter] = useState<"all" | CrystalSystem>(() => initialChoice("crystal", crystalOptions, "all"));
-  const [colorFilter, setColorFilter] = useState<"all" | ColorGroup>(() => initialChoice("color", colorOptions, "all"));
+  const [advancedOpen, setAdvancedOpen] = useState(initialQuery.filtersOpen);
+  const [hardnessFilter, setHardnessFilter] = useState<"all" | HardnessBand>(() => initialChoice(initialQuery.hardness, hardnessOptions.map((option) => option.id), "all"));
+  const [crystalFilter, setCrystalFilter] = useState<"all" | CrystalSystem>(() => initialChoice(initialQuery.crystal, crystalOptions, "all"));
+  const [colorFilter, setColorFilter] = useState<"all" | ColorGroup>(() => initialChoice(initialQuery.color, colorOptions, "all"));
   const [lineGeometry, setLineGeometry] = useState<Array<{ symbol: string; x1: number; y1: number; x2: number; y2: number; family: MineralFamily; weight: number }>>([]);
 
   const appRef = useRef<HTMLElement | null>(null);
@@ -114,9 +118,19 @@ export default function Home() {
   );
 
   const elementMinerals = useMemo(
-    () => filteredMinerals.filter((mineral) => mineral.elements.includes(activeSymbol)),
+    () => filteredMinerals.filter((mineral) => listsMineralForElement(mineral, activeSymbol)),
     [activeSymbol, filteredMinerals],
   );
+
+  const mineralCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const mineral of filteredMinerals) {
+      for (const symbol of mineral.elements) {
+        counts.set(symbol, (counts.get(symbol) ?? 0) + 1);
+      }
+    }
+    return counts;
+  }, [filteredMinerals]);
 
   const comparison = useMemo(() => {
     const left = filteredMinerals.filter((mineral) => mineral.elements.includes(compareSymbols[0]));
@@ -133,20 +147,10 @@ export default function Home() {
     return focused ? [focused] : elementMinerals;
   }, [activeMineralId, elementMinerals]);
 
-  const connections = useMemo(() => {
-    const bySymbol = new Map<string, { family: MineralFamily; count: number }>();
-    visibleMinerals.forEach((mineral) => {
-      mineral.elements.forEach((symbol) => {
-        if (symbol === activeSymbol) return;
-        const current = bySymbol.get(symbol);
-        bySymbol.set(symbol, {
-          family: current?.family ?? mineral.family,
-          count: (current?.count ?? 0) + 1,
-        });
-      });
-    });
-    return bySymbol;
-  }, [activeSymbol, visibleMinerals]);
+  const connections = useMemo(
+    () => connectionSymbols(visibleMinerals, activeSymbol, activeMineralId),
+    [activeMineralId, activeSymbol, visibleMinerals],
+  );
 
   const dataIssues = useMemo(() => {
     const symbols = new Set(elements.map((item) => item.symbol));
@@ -207,7 +211,7 @@ export default function Home() {
   };
 
   const handleMapSelect = useCallback((mineral: MineralData) => {
-    setPinnedSymbol(mineral.elements[0] ?? "Si");
+    setPinnedSymbol((current) => distinctiveElement(mineral, current));
     setPinnedMineral(mineral.id);
     setHoveredMineral(null);
     setUiError(null);
@@ -259,6 +263,23 @@ export default function Home() {
     document.addEventListener("fullscreenchange", onFullscreenChange);
     return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
   }, []);
+
+  useEffect(() => {
+    const next = serializeAtlasQuery({
+      element: pinnedSymbol,
+      mineral: pinnedMineral,
+      compare: compareMode ? compareSymbols : null,
+      family,
+      hardness: hardnessFilter,
+      crystal: crystalFilter,
+      color: colorFilter,
+      filtersOpen: advancedOpen,
+    });
+    const url = `${window.location.pathname}${next}${window.location.hash}`;
+    if (`${window.location.pathname}${window.location.search}${window.location.hash}` !== url) {
+      window.history.replaceState(null, "", url);
+    }
+  }, [advancedOpen, colorFilter, compareMode, compareSymbols, crystalFilter, family, hardnessFilter, pinnedMineral, pinnedSymbol]);
 
   const toggleFullscreen = async () => {
     setUiError(null);
@@ -473,7 +494,7 @@ export default function Home() {
                   const isConnected = connections.has(item.symbol);
                   const isDimmed = hasRelationships && !isActive && !isConnected;
                   const compareIndex = compareMode ? compareSymbols.indexOf(item.symbol) : -1;
-                  const mineralCount = filteredMinerals.filter((mineral) => mineral.elements.includes(item.symbol)).length;
+                  const mineralCount = mineralCounts.get(item.symbol) ?? 0;
                   return (
                     <button
                       key={item.symbol}
@@ -504,7 +525,7 @@ export default function Home() {
               {Object.entries(kindLabels).map(([kind, label]) => (
                 <span key={kind}><i className={`legend-swatch kind-${kind}`} />{label}</span>
               ))}
-              <span className="legend-note"><Info size={12} /> Formula co-occurrence · width = frequency</span>
+              <span className="legend-note"><Info size={12} /> Required formula elements · substitutions appear when a mineral is pinned</span>
             </div>
           </section>
 
@@ -531,6 +552,7 @@ export default function Home() {
                 <MineralCard
                   key={mineral.id}
                   mineral={mineral}
+                  occupancy={listsMineralForElement(mineral, activeSymbol) ?? "required"}
                   active={activeMineralId === mineral.id}
                   onEnter={() => setHoveredMineral(mineral.id)}
                   onLeave={() => setHoveredMineral(null)}
@@ -569,7 +591,7 @@ export default function Home() {
       <section className="map-section" aria-label="World mineral locality map">
         <div className="map-toolbar">
           <strong>Localities</strong>
-          <span>{filteredLocalities.length} shown · follows active filters · click a marker to inspect</span>
+          <span>{filteredLocalities.length} shown · follows active filters · classic or type localities, not occurrence ranges</span>
         </div>
         <LocalityMap
           minerals={filteredMinerals}
@@ -584,12 +606,14 @@ export default function Home() {
 
 function MineralCard({
   mineral,
+  occupancy,
   active,
   onEnter,
   onLeave,
   onClick,
 }: {
   mineral: MineralData;
+  occupancy: "required" | "substitute";
   active: boolean;
   onEnter: () => void;
   onLeave: () => void;
@@ -617,11 +641,11 @@ function MineralCard({
     >
       {mineral.image ? (
         <span className="mineral-photo">
-          <img src={mineral.image} alt={mineral.imageAlt ?? `${mineral.name} mineral specimen`} />
+          <img src={publicUrl(mineral.image)} alt={mineral.imageAlt ?? `${mineral.name} mineral specimen`} />
         </span>
       ) : <span className="mineral-gem" aria-hidden="true" />}
       <span className="mineral-copy">
-        <span className="mineral-topline"><strong>{mineral.name}</strong><em>{meta.label}</em></span>
+        <span className="mineral-topline"><strong>{mineral.name}</strong><em>{occupancy === "substitute" ? "Substitution" : meta.label}</em></span>
         <span className="formula">{mineral.formula}</span>
         <small>{mineral.note}</small>
         <span className="mineral-traits">
@@ -632,8 +656,9 @@ function MineralCard({
         {mineral.locality && (
           <span className="locality"><MapPin size={9} /> {mineral.locality}{mineral.country ? `, ${mineral.country}` : ""}</span>
         )}
-        {active && (mineral.localityContext || mineral.sourceUrl || mineral.imageSourceUrl) && (
+        {active && (mineral.localityContext || mineral.sourceUrl || mineral.imageSourceUrl || mineral.substitutes?.length) && (
           <span className="locality-detail">
+            {mineral.substitutes?.length ? <span>Optional occupants: {mineral.substitutes.join(", ")}</span> : null}
             {mineral.localityContext && <span>{mineral.localityContext}</span>}
             {mineral.sourceUrl && <a href={mineral.sourceUrl} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>Source <ArrowUpRight size={9} /></a>}
             {mineral.imageSourceUrl && <a href={mineral.imageSourceUrl} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>Photo <ArrowUpRight size={9} /></a>}

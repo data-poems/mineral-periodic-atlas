@@ -1,7 +1,0 @@
-# Visualization-only atlas validation
-
-The presentation shell has been reduced to a compact instrument header, functional controls, the periodic relationship field, the selected-element mineral list, and the synchronized locality map. The promotional hero, editorial tagline, ambient decoration, and explanatory footer were removed. Full-screen mode remains available.
-
-The mineral reference dataset increased from 57 to 91 records. Represented and genuinely connected elements increased from 39/37 to 68/68. New records add meaningful coverage for nitrogen, scandium, cobalt, gallium, germanium, arsenic, selenium, bromine, rubidium, niobium, ruthenium, palladium, cadmium, indium, antimony, tellurium, iodine, cesium, hafnium, tantalum, rhenium, osmium, iridium, platinum, thallium, bismuth, thorium, uranium, and other previously sparse elements. Remaining unrepresented cells are primarily noble gases, unstable synthetic elements, and rare radionuclides for which ordinary mineral connections would be misleading.
-
-Desktop and 390-pixel mobile captures show the control strip, scrollable periodic table, mineral result panel, and locality visualization without promotional whitespace. Deep links to Platinum and Nitrogen produced the expected Sperrylite and Nitratine connections. The new Nitrates family filter isolated Nitratine and its Na–N–O links. Dataset integrity, TypeScript, and production builds passed.
