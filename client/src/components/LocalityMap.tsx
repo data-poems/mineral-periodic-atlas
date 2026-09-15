@@ -42,7 +42,7 @@ export default function LocalityMap({ minerals, selectedId, onSelect, onHover }:
     <div className="locality-map-layout">
       <div className="map-frame">
         <ProjectedWorldMap minerals={mappedMinerals} selectedId={selectedId} onSelect={onSelect} onHover={onHover} />
-        <div className="map-scale"><span /> Filtered specimen localities</div>
+        <div className="map-scale"><span /> Example mineral localities</div>
       </div>
 
       <div className="locality-index" ref={listRef}>
@@ -58,7 +58,7 @@ export default function LocalityMap({ minerals, selectedId, onSelect, onHover }:
             onMouseLeave={() => onHover(null)}
             onClick={() => onSelect(mineral)}
             onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === " ") {
+              if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
                 event.preventDefault();
                 onSelect(mineral);
               }
@@ -83,7 +83,7 @@ export default function LocalityMap({ minerals, selectedId, onSelect, onHover }:
 
 function ProjectedWorldMap({ minerals, selectedId, onSelect, onHover }: LocalityMapProps) {
   return (
-    <div className="projection-map" role="img" aria-label={`World map with ${minerals.length} filtered mineral localities`}>
+    <div className="projection-map" role="group" aria-label={`World map with ${minerals.length} filtered mineral localities`}>
       <svg viewBox="0 0 1000 500" aria-hidden="true">
         <g className="graticule">
           {[100, 200, 300, 400].map((y) => <line key={`y-${y}`} x1="0" x2="1000" y1={y} y2={y} />)}

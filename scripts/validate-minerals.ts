@@ -40,7 +40,7 @@ for (const mineral of minerals) {
   if (mineral.coordinates && (Math.abs(mineral.coordinates.lat) > 90 || Math.abs(mineral.coordinates.lng) > 180)) {
     problems.push(`Invalid map coordinates: ${mineral.name}`);
   }
-  if (mineral.image && (!mineral.imageAlt || !mineral.imageCredit || !mineral.imageSourceUrl)) {
+  if (mineral.image && (!mineral.imageAlt || !mineral.imageCredit || !mineral.imageSourceUrl || !mineral.imageLicense || !mineral.imageLicenseUrl || !mineral.imageOrigin)) {
     problems.push(`Image attribution incomplete: ${mineral.name}`);
   }
 }

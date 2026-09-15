@@ -20,7 +20,12 @@ export default defineConfig(({ mode }) => {
 
   return {
     base,
-    plugins: [react(), tailwindcss()],
+    plugins: [react(), tailwindcss(), {
+      name: "atlas-serving-base",
+      generateBundle() {
+        this.emitFile({ type: "asset", fileName: "atlas-base.json", source: JSON.stringify({ base }) });
+      },
+    }],
     resolve: {
       alias: {
         "@": path.resolve(PROJECT_ROOT, "client", "src"),

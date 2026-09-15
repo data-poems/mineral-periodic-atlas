@@ -36,6 +36,29 @@ describe("tourmaline occupancy", () => {
 });
 
 describe("group unions", () => {
+  it.each([
+    ["olivine", ["Mg", "Fe"], "Si"],
+    ["topaz", ["F", "H"], "Al"],
+    ["monazite", ["Ce", "Nd"], "P"],
+    ["wolframite", ["Fe", "Mn"], "W"],
+    ["pollucite", ["Na", "H"], "Cs"],
+    ["tourmaline", ["Al", "Cr"], "B"],
+  ] as const)("keeps variable occupants out of unfocused %s links", (id, variable, framework) => {
+    const mineral = byId(id);
+    for (const symbol of variable) {
+      expect(listsMineralForElement(mineral, symbol)).toBe("substitute");
+      expect(connectionSymbols([mineral], framework, null).has(symbol)).toBe(false);
+      expect(connectionSymbols([mineral], framework, id).has(symbol)).toBe(true);
+      expect(connectionSymbols([mineral], symbol, null).size).toBe(0);
+    }
+  });
+
+  it("retains hydroxyl hydrogen and the named allanite endmember", () => {
+    expect(listsMineralForElement(byId("kaolinite"), "H")).toBe("required");
+    expect(byId("allanite").name).toBe("Allanite-(Ce)");
+    expect(listsMineralForElement(byId("allanite"), "Ce")).toBe("required");
+    expect(byId("rubicline").recordKind).toBe("species");
+  });
   it("keeps apatite halogen/hydroxyl occupancy optional", () => {
     const apatite = byId("apatite");
     expect(apatite.elements).toEqual(["Ca", "P", "O"]);

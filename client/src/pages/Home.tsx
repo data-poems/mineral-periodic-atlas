@@ -25,6 +25,7 @@ import {
   type MineralFamily,
 } from "@/lib/mineralData";
 import { connectionSymbols, distinctiveElement, listsMineralForElement } from "@/lib/occupancy";
+import { searchElements } from "@/lib/elementSearch";
 import { publicUrl } from "@/lib/publicUrl";
 
 const filters: Array<{ id: "all" | MineralFamily; label: string }> = [
@@ -161,18 +162,7 @@ export default function Home() {
     );
   }, []);
 
-  const searchMatches = useMemo(() => {
-    const cleaned = query.trim().toLowerCase();
-    if (!cleaned) return [];
-    return elements
-      .filter(
-        (item) =>
-          item.name.toLowerCase().includes(cleaned) ||
-          item.symbol.toLowerCase().startsWith(cleaned) ||
-          String(item.number) === cleaned,
-      )
-      .slice(0, 6);
-  }, [query]);
+  const searchMatches = useMemo(() => searchElements(elements, query), [query]);
 
   const chooseElement = (symbol: string) => {
     if (compareMode) {
@@ -398,19 +388,19 @@ export default function Home() {
             </div>
             <label>
               <span>Mohs hardness</span>
-              <select value={hardnessFilter} onChange={(event) => { setHardnessFilter(event.target.value as "all" | HardnessBand); setPinnedMineral(null); }}>
+              <select aria-label="Mohs hardness" value={hardnessFilter} onChange={(event) => { setHardnessFilter(event.target.value as "all" | HardnessBand); setPinnedMineral(null); }}>
                 {hardnessOptions.map((option) => <option key={option.id} value={option.id}>{option.label} · {option.detail}</option>)}
               </select>
             </label>
             <label>
               <span>Crystal system</span>
-              <select value={crystalFilter} onChange={(event) => { setCrystalFilter(event.target.value as "all" | CrystalSystem); setPinnedMineral(null); }}>
+              <select aria-label="Crystal system" value={crystalFilter} onChange={(event) => { setCrystalFilter(event.target.value as "all" | CrystalSystem); setPinnedMineral(null); }}>
                 {crystalOptions.map((option) => <option key={option} value={option}>{titleCase(option)}</option>)}
               </select>
             </label>
             <label>
               <span>Typical color</span>
-              <select value={colorFilter} onChange={(event) => { setColorFilter(event.target.value as "all" | ColorGroup); setPinnedMineral(null); }}>
+              <select aria-label="Typical color" value={colorFilter} onChange={(event) => { setColorFilter(event.target.value as "all" | ColorGroup); setPinnedMineral(null); }}>
                 {colorOptions.map((option) => <option key={option} value={option}>{titleCase(option)}</option>)}
               </select>
             </label>
@@ -525,7 +515,7 @@ export default function Home() {
               {Object.entries(kindLabels).map(([kind, label]) => (
                 <span key={kind}><i className={`legend-swatch kind-${kind}`} />{label}</span>
               ))}
-              <span className="legend-note"><Info size={12} /> Required formula elements · substitutions appear when a mineral is pinned</span>
+              <span className="legend-note"><Info size={12} /> Formula elements · focus a mineral to see variable occupants</span>
             </div>
           </section>
 
@@ -632,7 +622,7 @@ function MineralCard({
       onBlur={onLeave}
       onClick={onClick}
       onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
+        if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
           event.preventDefault();
           onClick();
         }
@@ -645,7 +635,7 @@ function MineralCard({
         </span>
       ) : <span className="mineral-gem" aria-hidden="true" />}
       <span className="mineral-copy">
-        <span className="mineral-topline"><strong>{mineral.name}</strong><em>{occupancy === "substitute" ? "Substitution" : meta.label}</em></span>
+        <span className="mineral-topline"><strong>{mineral.name}</strong><em>{occupancy === "substitute" ? "Variable" : meta.label}</em></span>
         <span className="formula">{mineral.formula}</span>
         <small>{mineral.note}</small>
         <span className="mineral-traits">
@@ -658,10 +648,15 @@ function MineralCard({
         )}
         {active && (mineral.localityContext || mineral.sourceUrl || mineral.imageSourceUrl || mineral.substitutes?.length) && (
           <span className="locality-detail">
-            {mineral.substitutes?.length ? <span>Optional occupants: {mineral.substitutes.join(", ")}</span> : null}
-            {mineral.localityContext && <span>{mineral.localityContext}</span>}
+            {mineral.substitutes?.length ? <span>Variable occupants: {mineral.substitutes.join(", ")}</span> : null}
+            {mineral.occupancyNote && <span>{mineral.occupancyNote}</span>}
+            {mineral.localityContext && <span>Example locality: {mineral.localityContext}</span>}
             {mineral.sourceUrl && <a href={mineral.sourceUrl} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>Source <ArrowUpRight size={9} /></a>}
-            {mineral.imageSourceUrl && <a href={mineral.imageSourceUrl} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>Photo <ArrowUpRight size={9} /></a>}
+            {mineral.imageSourceUrl && <span className="photo-credit">
+              Photo: {mineral.imageCredit} · <a href={mineral.imageLicenseUrl} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>{mineral.imageLicense}</a>
+              <a href={mineral.imageSourceUrl} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>Original photo <ArrowUpRight size={9} /></a>
+              <span>Specimen origin: {mineral.imageOrigin}. This illustration may differ from the mapped locality. Thumbnail resized and cropped for display.</span>
+            </span>}
           </span>
         )}
       </span>

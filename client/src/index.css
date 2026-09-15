@@ -387,8 +387,8 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 .mineral-card:active { transform: scale(.985); }
 .mineral-gem { width: 20px; height: 20px; justify-self: center; background: color-mix(in srgb, var(--family-color) 24%, #1c221d); border: 1px solid color-mix(in srgb, var(--family-color) 62%, #333); box-shadow: inset -4px -4px 9px rgba(0,0,0,.38), 0 0 14px color-mix(in srgb, var(--family-glow) 35%, transparent); clip-path: polygon(50% 0%, 88% 20%, 100% 64%, 70% 100%, 24% 88%, 0% 44%, 18% 12%); }
 .mineral-photo { width: 38px; height: 38px; overflow: hidden; border: 1px solid color-mix(in srgb, var(--family-color) 38%, #343a35); background: #0c0f0d; }
-.mineral-photo img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.78) contrast(1.08); transition: transform 220ms var(--ease-out), filter 220ms var(--ease-out); }
-.mineral-card:hover .mineral-photo img, .mineral-card.active .mineral-photo img { transform: scale(1.08); filter: saturate(1) contrast(1.03); }
+.mineral-photo img { width: 100%; height: 100%; object-fit: cover;  transition: transform 220ms var(--ease-out), filter 220ms var(--ease-out); }
+.mineral-card:hover .mineral-photo img, .mineral-card.active .mineral-photo img { transform: scale(1.08);  }
 .mineral-copy { min-width: 0; display: block; }
 .mineral-topline { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .mineral-topline strong { overflow: hidden; color: #dcd9ce; font-size: 12px; font-weight: 560; text-overflow: ellipsis; white-space: nowrap; }
@@ -591,3 +591,9 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
 }
+
+/* Keep source and photo credits readable in the existing detail panel. */
+.mineral-card.active .mineral-copy > small { white-space: normal; font-size: 11px; line-height: 1.5; color: #b7bdb4; }
+.locality-detail { font-size: 12px; line-height: 1.5; color: #bdc4ba; }
+.locality-detail > span, .photo-credit > span { display: block; margin-top: 6px; }
+.locality-detail a { font: inherit; text-transform: none; letter-spacing: normal; text-decoration: underline; }
