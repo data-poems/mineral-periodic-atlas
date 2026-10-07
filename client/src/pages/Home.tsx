@@ -78,6 +78,14 @@ const normalizeAtlasQuery = (query: AtlasQuery): AtlasQuery => ({
 });
 const readAtlasQuery = () => normalizeAtlasQuery(parseAtlasQuery(window.location.search, atlasValidity));
 
+function revealHorizontally(container: HTMLElement | null, item: HTMLElement | null) {
+  if (!container || !item) return;
+  const outer = container.getBoundingClientRect();
+  const inner = item.getBoundingClientRect();
+  if (inner.left < outer.left) container.scrollLeft += inner.left - outer.left;
+  else if (inner.right > outer.right) container.scrollLeft += inner.right - outer.right;
+}
+
 export default function Home() {
   const [initialQuery] = useState(readAtlasQuery);
   const [pinnedSymbol, setPinnedSymbol] = useState(initialQuery.element);
@@ -99,8 +107,18 @@ export default function Home() {
 
   const appRef = useRef<HTMLElement | null>(null);
   const gridRef = useRef<HTMLDivElement | null>(null);
+  const familyStripRef = useRef<HTMLDivElement | null>(null);
+  const tableScrollRef = useRef<HTMLDivElement | null>(null);
   const elementRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const isInitialUrlSync = useRef(true);
+
+  useLayoutEffect(() => {
+    revealHorizontally(familyStripRef.current, familyStripRef.current?.querySelector<HTMLButtonElement>('[aria-pressed="true"]') ?? null);
+  }, [family]);
+
+  useLayoutEffect(() => {
+    revealHorizontally(tableScrollRef.current, elementRefs.current[pinnedSymbol] ?? null);
+  }, [pinnedSymbol]);
 
   const activeSymbol = hoveredSymbol ?? pinnedSymbol;
   const activeElement = elements.find((item) => item.symbol === activeSymbol) ?? elements[13];
@@ -376,9 +394,9 @@ export default function Home() {
               aria-label="Find an element by name, symbol, or atomic number"
             />
             {query && (
-              <div className="search-results" role="listbox">
+              <div className="search-results" role="group" aria-label="Matching elements">
                 {searchMatches.length ? searchMatches.map((item) => (
-                  <button key={item.symbol} onClick={() => chooseElement(item.symbol)} role="option">
+                  <button key={item.symbol} onClick={() => chooseElement(item.symbol)}>
                     <span className="search-symbol">{item.symbol}</span>
                     <span>{item.name}</span>
                     <small>{item.number}</small>
@@ -406,7 +424,7 @@ export default function Home() {
             {activeAdvancedFilters > 0 && <b>{activeAdvancedFilters}</b>}
           </button>
 
-          <div className="filter-scroll" aria-label="Filter by mineral family">
+          <div className="filter-scroll" ref={familyStripRef} aria-label="Filter by mineral family">
             {filters.map((item) => (
               <button
                 key={item.id}
@@ -496,7 +514,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="table-scroll">
+            <div className="table-scroll" ref={tableScrollRef}>
               <div className="periodic-grid" ref={gridRef}>
                 <div className="series-label lanthanide-label">LANTHANIDES</div>
                 <div className="series-label actinide-label">ACTINIDES</div>
@@ -657,23 +675,20 @@ function MineralCard({
   const meta = familyMeta[mineral.family];
   return (
     <article
-      role="button"
-      tabIndex={0}
       className={active ? "mineral-card active" : "mineral-card"}
       style={{ "--family-color": meta.color, "--family-glow": meta.glow } as React.CSSProperties}
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
       onFocus={onEnter}
       onBlur={onLeave}
-      onClick={onClick}
-      onKeyDown={(event) => {
-        if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
-          event.preventDefault();
-          onClick();
-        }
-      }}
-      aria-pressed={active}
     >
+      <button
+        className="mineral-select"
+        aria-label={`Select ${mineral.name}`}
+        aria-describedby={`mineral-summary-${mineral.id}`}
+        aria-pressed={active}
+        onClick={onClick}
+      />
       {mineral.image ? (
         <span className="mineral-photo">
           <img src={publicUrl(mineral.image)} alt={mineral.imageAlt ?? `${mineral.name} mineral specimen`} />
@@ -682,7 +697,7 @@ function MineralCard({
       <span className="mineral-copy">
         <span className="mineral-topline"><strong>{mineral.name}</strong><em>{occupancy === "substitute" ? "Variable" : meta.label}</em></span>
         <span className="formula">{mineral.formula}</span>
-        <small>{mineral.note}</small>
+        <small id={`mineral-summary-${mineral.id}`}>{mineral.note}</small>
         <span className="mineral-traits">
           <i>H {hardnessLabel(mineral.hardness)}</i>
           <i>{titleCase(mineral.crystalSystem)}</i>

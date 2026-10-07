@@ -40,10 +40,11 @@ Scheelite and powellite are calcium members of the scheelite group; the atlas
 labels wolframite as the ferberite–hübnerite series, rather than as a single
 IMA-approved species.
 
-The recent IMA–CNMNC treatment places the columbite group—including
-Columbite-(Fe), Tantalite-(Fe), ferberite, and hübnerite—inside the structurally
-defined columbite supergroup of oxides. The atlas preserves that distinction in
-record notes and sources while using chemical families for its filter controls.
+The IMA–CNMNC treatment places both the columbite group (including
+Columbite-(Fe) and Tantalite-(Fe)) and the wolframite group (including ferberite
+and hübnerite) inside the structurally defined columbite supergroup of oxides.
+The atlas uses a separate editorial chemistry category for these filter controls;
+other oxysalts, such as carbonates and sulfates, retain their own filter chips.
 See [scheelite](https://rruff.info/scheelite/display%3Ddefault/R150130),
 [powellite](https://rruff.info/----/R050355), and the
 [IMA–CNMNC classification](https://doi.org/10.1180/mgm.2022.105).

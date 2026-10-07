@@ -21,7 +21,7 @@ export default function LocalityMap({ minerals, selectedId, onSelect, onHover }:
     if (!selectedId) return;
     listRef.current
       ?.querySelector<HTMLElement>(`[data-mineral-id="${selectedId}"]`)
-      ?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      ?.scrollIntoView({ block: "nearest", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
   }, [selectedId]);
 
   if (!mappedMinerals.length) {
@@ -50,20 +50,10 @@ export default function LocalityMap({ minerals, selectedId, onSelect, onHover }:
           <article
             key={mineral.id}
             data-mineral-id={mineral.id}
-            role="button"
-            tabIndex={0}
             className={selectedId === mineral.id ? "locality-row active" : "locality-row"}
             style={{ "--marker-color": familyMeta[mineral.family].color } as React.CSSProperties}
             onMouseEnter={() => onHover(mineral.id)}
             onMouseLeave={() => onHover(null)}
-            onClick={() => onSelect(mineral)}
-            onKeyDown={(event) => {
-              if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
-                event.preventDefault();
-                onSelect(mineral);
-              }
-            }}
-            aria-pressed={selectedId === mineral.id}
           >
             <span className="locality-number">{String(index + 1).padStart(2, "0")}</span>
             <span className="locality-pin"><MapPin size={12} /></span>
@@ -71,6 +61,14 @@ export default function LocalityMap({ minerals, selectedId, onSelect, onHover }:
               <strong>{mineral.name}</strong>
               <small>{mineral.locality}, {mineral.country}</small>
             </span>
+            <button
+              className="locality-select"
+              aria-label={`Select ${mineral.name} at ${mineral.locality}`}
+              aria-pressed={selectedId === mineral.id}
+              onFocus={() => onHover(mineral.id)}
+              onBlur={() => onHover(null)}
+              onClick={() => onSelect(mineral)}
+            />
             {mineral.sourceUrl && (
               <a href={mineral.sourceUrl} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()} aria-label={`Open ${mineral.name} locality source`}><ExternalLink size={12} /></a>
             )}

@@ -71,6 +71,24 @@ pnpm test:e2e
 
 Use `PLAYWRIGHT_CHROMIUM_EXECUTABLE` only when a local managed browser is unavailable; CI uses Playwright’s managed Chromium by default.
 
+Browser tests build into `.verify/public` and serve it on loopback; they do not
+replace the deployed `dist/public` artifact. To check an existing deployment
+without building or starting a server:
+
+```bash
+PLAYWRIGHT_BASE_URL=https://datapoems.io pnpm test:e2e
+```
+
+On Linux hosts where Chromium's temporary-file-backed shared memory crashes,
+set `PLAYWRIGHT_USE_SHM=1` to use `/dev/shm` instead, provided it has enough space.
+
+For the same interaction suite in Firefox:
+
+```bash
+pnpm exec playwright install firefox
+pnpm exec playwright test --config playwright.firefox.config.ts
+```
+
 To build for a different path, set the base at build time:
 
 ```bash
