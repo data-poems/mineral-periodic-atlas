@@ -86,6 +86,18 @@ function revealHorizontally(container: HTMLElement | null, item: HTMLElement | n
   else if (inner.right > outer.right) container.scrollLeft += inner.right - outer.right;
 }
 
+function keepHorizontallyVisible(container: HTMLElement | null, item: HTMLElement | null) {
+  if (!container || !item) return;
+  let disposed = false;
+  const update = () => { if (!disposed) revealHorizontally(container, item); };
+  update();
+  const observer = new ResizeObserver(update);
+  observer.observe(container);
+  observer.observe(item);
+  void document.fonts.ready.then(update);
+  return () => { disposed = true; observer.disconnect(); };
+}
+
 export default function Home() {
   const [initialQuery] = useState(readAtlasQuery);
   const [pinnedSymbol, setPinnedSymbol] = useState(initialQuery.element);
@@ -113,11 +125,11 @@ export default function Home() {
   const isInitialUrlSync = useRef(true);
 
   useLayoutEffect(() => {
-    revealHorizontally(familyStripRef.current, familyStripRef.current?.querySelector<HTMLButtonElement>('[aria-pressed="true"]') ?? null);
+    return keepHorizontallyVisible(familyStripRef.current, familyStripRef.current?.querySelector<HTMLButtonElement>('[aria-pressed="true"]') ?? null);
   }, [family]);
 
   useLayoutEffect(() => {
-    revealHorizontally(tableScrollRef.current, elementRefs.current[pinnedSymbol] ?? null);
+    return keepHorizontallyVisible(tableScrollRef.current, elementRefs.current[pinnedSymbol] ?? null);
   }, [pinnedSymbol]);
 
   const activeSymbol = hoveredSymbol ?? pinnedSymbol;

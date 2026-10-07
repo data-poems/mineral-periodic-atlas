@@ -178,6 +178,13 @@ test.describe("phone interaction", () => {
       expect(box!.x).toBeGreaterThanOrEqual(0);
       expect(box!.x + box!.width).toBeLessThanOrEqual(390);
     }
+    // Late font loading or text resizing must not clip the selected chip again.
+    await page.getByRole("button", { name: "Oxysalts (Mo/W/Nb/Ta)", exact: true }).evaluate((button) => { button.style.fontSize = "12px"; });
+    await expect.poll(() => page.locator(".filter-scroll").evaluate((strip) => {
+      const active = strip.querySelector('[aria-pressed="true"]')!.getBoundingClientRect();
+      const bounds = strip.getBoundingClientRect();
+      return active.left >= bounds.left - 1 && active.right <= bounds.right + 1;
+    })).toBe(true);
   });
 
   test("search, scrolling family filters, and reset work without page overflow", async ({ page }) => {
