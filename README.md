@@ -60,6 +60,17 @@ The production server opens the atlas at `http://localhost:3000/periodic/`.
 The app uses Google Fonts when available and local font fallbacks otherwise.
 No API key or database is required.
 
+## Browser tests
+
+Install the Playwright browser once, then run the production-route interaction suite:
+
+```bash
+pnpm exec playwright install chromium
+pnpm test:e2e
+```
+
+Use `PLAYWRIGHT_CHROMIUM_EXECUTABLE` only when a local managed browser is unavailable; CI uses Playwright’s managed Chromium by default.
+
 To build for a different path, set the base at build time:
 
 ```bash

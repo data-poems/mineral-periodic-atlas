@@ -49,6 +49,12 @@ pids
 coverage/
 *.lcov
 
+# Playwright browser-test artifacts
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
 # nyc test coverage
 .nyc_output
 

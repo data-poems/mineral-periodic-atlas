@@ -5,6 +5,7 @@ export type MineralFamily =
   | "sulfide"
   | "oxide"
   | "halide"
+  | "oxysalt"
   | "sulfate"
   | "nitrate"
   | "phosphate"
@@ -111,7 +112,7 @@ const baseMinerals: MineralBase[] = [
   { id: "gypsum", name: "Gypsum", formula: "CaSO₄·2H₂O", family: "sulfate", elements: ["Ca", "S", "O", "H"], note: "A hydrated calcium sulfate used in plaster." },
   { id: "barite", name: "Barite", formula: "BaSO₄", family: "sulfate", elements: ["Ba", "S", "O"], note: "A dense barium sulfate mineral." },
   { id: "apatite", name: "Apatite group", formula: "Ca₅(PO₄)₃(F,Cl,OH)", family: "phosphate", recordKind: "group", elements: ["Ca", "P", "O"], substitutes: ["F", "Cl", "H"], note: "A phosphate group whose channel anion may be F, Cl, or OH." },
-  { id: "scheelite", name: "Scheelite", formula: "CaWO₄", family: "oxide", elements: ["Ca", "W", "O"], note: "An important tungsten-bearing mineral." },
+  { id: "scheelite", name: "Scheelite", formula: "CaWO₄", family: "oxysalt", elements: ["Ca", "W", "O"], note: "A calcium tungstate in the scheelite group and an important tungsten mineral.", sourceName: "RRUFF / IMA specimen record", sourceUrl: "https://rruff.info/scheelite/display%3Ddefault/R150130" },
   { id: "gold", name: "Native gold", formula: "Au", family: "native", elements: ["Au"], note: "Gold occurring as a native elemental mineral." },
   { id: "copper", name: "Native copper", formula: "Cu", family: "native", elements: ["Cu"], note: "Copper occurring naturally in elemental form." },
   { id: "graphite", name: "Graphite", formula: "C", family: "native", elements: ["C"], note: "A crystalline allotrope of elemental carbon." },
@@ -136,7 +137,7 @@ const baseMinerals: MineralBase[] = [
   { id: "diamond", name: "Diamond", formula: "C", family: "native", elements: ["C"], note: "The hardest natural substance, built from a three-dimensional carbon lattice.", locality: "Cullinan Mine, Gauteng", country: "South Africa", localityContext: "Source of the 3,106-carat Cullinan, the largest gem-quality rough diamond found.", sourceName: "GIA", sourceUrl: "https://www.gia.edu/gems-gemology/summer-2006-cullinan-diamond-scarratt" },
   { id: "allanite", name: "Allanite-(Ce)", formula: "CaCeAl₂Fe(Si₂O₇)(SiO₄)O(OH)", family: "silicate", recordKind: "species", elements: ["Ca", "Ce", "Al", "Fe", "Si", "O", "H"], substitutes: ["La", "Nd", "Y"], note: "The cerium-dominant allanite species, shown with its ideal endmember formula.", sourceName: "WGNHS", sourceUrl: "https://home.wgnhs.wisc.edu/allanite/" },
   { id: "uraninite", name: "Uraninite", formula: "UO₂", family: "oxide", elements: ["U", "O"], note: "The most important primary ore mineral of uranium.", sourceName: "Geology.com", sourceUrl: "https://geology.com/minerals/uraninite.shtml" },
-  { id: "columbite", name: "Columbite-(Fe)", formula: "FeNb₂O₆", family: "oxide", elements: ["Fe", "Nb", "O"], note: "The iron-dominant niobate end member of the columbite group.", sourceName: "Mindat", sourceUrl: "https://www.mindat.org/min-1514.html" },
+  { id: "columbite", name: "Columbite-(Fe)", formula: "FeNb₂O₆", family: "oxysalt", elements: ["Fe", "Nb", "O"], note: "The iron-dominant niobate species in the columbite group.", sourceName: "IMA–CNMNC columbite-supergroup classification", sourceUrl: "https://doi.org/10.1180/mgm.2022.105" },
   { id: "bismuthinite", name: "Bismuthinite", formula: "Bi₂S₃", family: "sulfide", elements: ["Bi", "S"], note: "A soft metallic sulfide and important ore of bismuth.", sourceName: "Minerals Education Coalition", sourceUrl: "https://mineralseducationcoalition.org/minerals-database/bismuth/" },
   { id: "stibnite", name: "Stibnite", formula: "Sb₂S₃", family: "sulfide", elements: ["Sb", "S"], note: "The principal ore mineral of antimony.", sourceName: "Mindat", sourceUrl: "https://www.mindat.org/min-3782.html" },
   { id: "realgar", name: "Realgar", formula: "As₄S₄", family: "sulfide", elements: ["As", "S"], note: "A light-sensitive red-orange arsenic sulfide.", sourceName: "Webmineral", sourceUrl: "https://webmineral.com/data/Realgar.shtml" },
@@ -146,8 +147,8 @@ const baseMinerals: MineralBase[] = [
   { id: "michenerite", name: "Michenerite", formula: "PdBiTe", family: "sulfide", elements: ["Pd", "Bi", "Te"], note: "A rare palladium–bismuth telluride mineral.", sourceName: "Mindat", sourceUrl: "https://www.mindat.org/min-2703.html" },
   { id: "skutterudite", name: "Skutterudite", formula: "CoAs₃", family: "sulfide", elements: ["Co", "As"], note: "A metallic cobalt arsenide of the skutterudite group.", sourceName: "Mindat", sourceUrl: "https://www.mindat.org/min-3682.html" },
   { id: "millerite", name: "Millerite", formula: "NiS", family: "sulfide", elements: ["Ni", "S"], note: "A nickel sulfide often forming radiating acicular crystals.", sourceName: "Mindat", sourceUrl: "https://www.mindat.org/min-2711.html" },
-  { id: "powellite", name: "Powellite", formula: "CaMoO₄", family: "oxide", elements: ["Ca", "Mo", "O"], note: "A calcium molybdate found in oxidized molybdenum deposits.", sourceName: "Mindat", sourceUrl: "https://www.mindat.org/min-3275.html" },
-  { id: "wolframite", name: "Wolframite", formula: "(Fe,Mn)WO₄", family: "oxide", recordKind: "series", elements: ["W", "O"], substitutes: ["Fe", "Mn"], occupancyNote: "Fe and Mn share the metal site between the ferberite and hübnerite endmembers.", note: "The iron–manganese tungstate series and an important tungsten ore.", sourceName: "Webmineral", sourceUrl: "https://webmineral.com/data/Wolframite.shtml" },
+  { id: "powellite", name: "Powellite", formula: "CaMoO₄", family: "oxysalt", elements: ["Ca", "Mo", "O"], note: "A calcium molybdate in the scheelite group.", sourceName: "RRUFF / IMA specimen record", sourceUrl: "https://rruff.info/----/R050355" },
+  { id: "wolframite", name: "Wolframite series", formula: "(Fe,Mn)WO₄", family: "oxysalt", recordKind: "series", elements: ["W", "O"], substitutes: ["Fe", "Mn"], occupancyNote: "Fe and Mn share the metal site between the ferberite and hübnerite endmembers.", note: "The ferberite–hübnerite tungsten series and an important tungsten ore.", sourceName: "IMA–CNMNC columbite-supergroup classification", sourceUrl: "https://doi.org/10.1180/mgm.2022.105" },
   { id: "lepidolite", name: "Lepidolite", formula: "K(Li,Al)₃(Si,Al)₄O₁₀(F,OH)₂", family: "silicate", recordKind: "group", elements: ["K", "Li", "Al", "Si", "O"], substitutes: ["F", "H"], note: "A lithium-rich mica common in rare-element pegmatites.", sourceName: "Webmineral", sourceUrl: "https://webmineral.com/data/Lepidolite.shtml" },
   { id: "pollucite", name: "Pollucite", formula: "CsAlSi₂O₆·nH₂O", family: "silicate", elements: ["Cs", "Al", "Si", "O"], substitutes: ["Na", "H"], occupancyNote: "Cs defines this species. Na can substitute, and the water content varies.", note: "A caesium-rich zeolite found in rare-element pegmatites.", sourceName: "Mindat", sourceUrl: "https://www.mindat.org/min-3255.html" },
   { id: "bazzite", name: "Bazzite", formula: "Be₃Sc₂Si₆O₁₈", family: "silicate", elements: ["Be", "Sc", "Si", "O"], note: "The blue, scandium-dominant analogue of beryl.", sourceName: "Mindat", sourceUrl: "https://www.mindat.org/min-586.html" },
@@ -163,7 +164,7 @@ const baseMinerals: MineralBase[] = [
   { id: "greenockite", name: "Greenockite", formula: "CdS", family: "sulfide", elements: ["Cd", "S"], note: "A cadmium sulfide often found as yellow coatings on sphalerite.", sourceName: "National Museum Wales", sourceUrl: "https://museum.wales/mineralogy-of-wales/database/?mineral=260&name=Greenockite" },
   { id: "roquesite", name: "Roquesite", formula: "CuInS₂", family: "sulfide", elements: ["Cu", "In", "S"], note: "A rare indium-bearing member of the chalcopyrite group.", sourceName: "Mindat", sourceUrl: "https://www.mindat.org/min-3445.html" },
   { id: "iodargyrite", name: "Iodargyrite", formula: "AgI", family: "halide", elements: ["Ag", "I"], note: "A soft silver iodide associated with weathered silver ores.", sourceName: "Mindat", sourceUrl: "https://www.mindat.org/min-2037.html" },
-  { id: "tantalite", name: "Tantalite-(Fe)", formula: "FeTa₂O₆", family: "oxide", elements: ["Fe", "Ta", "O"], note: "The iron-dominant tantalate member of the columbite supergroup.", sourceName: "Mindat", sourceUrl: "https://www.mindat.org/min-1530.html" },
+  { id: "tantalite", name: "Tantalite-(Fe)", formula: "FeTa₂O₆", family: "oxysalt", elements: ["Fe", "Ta", "O"], note: "The iron-dominant tantalate species in the columbite group.", sourceName: "IMA–CNMNC columbite-supergroup classification", sourceUrl: "https://doi.org/10.1180/mgm.2022.105" },
   { id: "rheniite", name: "Rheniite", formula: "ReS₂", family: "sulfide", elements: ["Re", "S"], note: "A rare rhenium sulfide found in high-temperature fumaroles.", sourceName: "Handbook of Mineralogy", sourceUrl: "https://handbookofmineralogy.org/wp-content/uploads/2022/07/Rheniite.pdf" },
   { id: "lorandite", name: "Lorandite", formula: "TlAsS₂", family: "sulfide", elements: ["Tl", "As", "S"], note: "A rare thallium–arsenic sulfosalt from low-temperature deposits.", sourceName: "Mindat", sourceUrl: "https://www.mindat.org/min-2434.html" },
   { id: "calaverite", name: "Calaverite", formula: "AuTe₂", family: "sulfide", elements: ["Au", "Te"], note: "A metallic gold telluride and economically important gold mineral.", sourceName: "Mindat", sourceUrl: "https://www.mindat.org/min-852.html" },
@@ -293,6 +294,7 @@ export const familyMeta: Record<MineralFamily, { label: string; color: string; g
   carbonate: { label: "Carbonates", color: "#f0c36f", glow: "rgba(240,195,111,.42)" },
   sulfide: { label: "Sulfides", color: "#e89060", glow: "rgba(232,144,96,.42)" },
   oxide: { label: "Oxides", color: "#7bb6f0", glow: "rgba(123,182,240,.42)" },
+  oxysalt: { label: "Oxysalts", color: "#d59ae8", glow: "rgba(213,154,232,.42)" },
   halide: { label: "Halides", color: "#b795e8", glow: "rgba(183,149,232,.42)" },
   sulfate: { label: "Sulfates", color: "#e18fa5", glow: "rgba(225,143,165,.42)" },
   nitrate: { label: "Nitrates", color: "#d98fcf", glow: "rgba(217,143,207,.42)" },

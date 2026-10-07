@@ -31,6 +31,23 @@ not establish that it never occurs in that mineral.
 | Rubicline | Rb-dominant species; K can substitute | [Original description](https://pubs.geoscienceworld.org/msa/ammin/article/83/11-12_Part_1/1335/43446/Rubicline-a-new-feldspar-from-San-Piero-in-Campo) |
 | Pentlandite | Fe and Ni retained in the represented species formula; parentheses describe variable proportions | [Pentlandite](https://handbookofmineralogy.org/pdfs/pentlandite.pdf) |
 
+## Navigation families
+
+Family chips are a chemistry-oriented way to browse this small collection, not
+a replacement for a formal structural classification. “Oxysalts (Mo/W/Nb/Ta)”
+groups the selected tungstate, molybdate, niobate, and tantalate records.
+Scheelite and powellite are calcium members of the scheelite group; the atlas
+labels wolframite as the ferberite–hübnerite series, rather than as a single
+IMA-approved species.
+
+The recent IMA–CNMNC treatment places the columbite group—including
+Columbite-(Fe), Tantalite-(Fe), ferberite, and hübnerite—inside the structurally
+defined columbite supergroup of oxides. The atlas preserves that distinction in
+record notes and sources while using chemical families for its filter controls.
+See [scheelite](https://rruff.info/scheelite/display%3Ddefault/R150130),
+[powellite](https://rruff.info/----/R050355), and the
+[IMA–CNMNC classification](https://doi.org/10.1180/mgm.2022.105).
+
 Tourmaline's general-formula V and W are site labels. They must not be parsed as
 vanadium and tungsten. This does not claim that vanadium never occurs in
 natural tourmaline: the selected substitutions are not exhaustive.

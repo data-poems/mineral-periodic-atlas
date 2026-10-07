@@ -13,7 +13,7 @@ import {
   X,
 } from "lucide-react";
 import LocalityMap from "@/components/LocalityMap";
-import { parseAtlasQuery, serializeAtlasQuery } from "@/lib/atlasState";
+import { parseAtlasQuery, serializeAtlasQuery, type AtlasQuery } from "@/lib/atlasState";
 import {
   elements,
   familyMeta,
@@ -35,6 +35,7 @@ const filters: Array<{ id: "all" | MineralFamily; label: string }> = [
   { id: "sulfide", label: "Sulfides" },
   { id: "oxide", label: "Oxides" },
   { id: "halide", label: "Halides" },
+  { id: "oxysalt", label: "Oxysalts (Mo/W/Nb/Ta)" },
   { id: "sulfate", label: "Sulfates" },
   { id: "nitrate", label: "Nitrates" },
   { id: "phosphate", label: "Phosphates" },
@@ -66,11 +67,19 @@ const atlasValidity = {
   elements: new Set(elements.map((element) => element.symbol)),
   minerals: new Set(minerals.map((mineral) => mineral.id)),
 };
-const initialQuery = parseAtlasQuery(window.location.search, atlasValidity);
 const initialChoice = <T extends string>(value: string, choices: readonly T[], fallback: T): T =>
   choices.includes(value as T) ? (value as T) : fallback;
+const normalizeAtlasQuery = (query: AtlasQuery): AtlasQuery => ({
+  ...query,
+  family: initialChoice(query.family, filters.map((item) => item.id), "all"),
+  hardness: initialChoice(query.hardness, hardnessOptions.map((option) => option.id), "all"),
+  crystal: initialChoice(query.crystal, crystalOptions, "all"),
+  color: initialChoice(query.color, colorOptions, "all"),
+});
+const readAtlasQuery = () => normalizeAtlasQuery(parseAtlasQuery(window.location.search, atlasValidity));
 
 export default function Home() {
+  const [initialQuery] = useState(readAtlasQuery);
   const [pinnedSymbol, setPinnedSymbol] = useState(initialQuery.element);
   const [hoveredSymbol, setHoveredSymbol] = useState<string | null>(null);
   const [family, setFamily] = useState<"all" | MineralFamily>(() => initialChoice(initialQuery.family, filters.map((item) => item.id), "all"));
@@ -91,6 +100,7 @@ export default function Home() {
   const appRef = useRef<HTMLElement | null>(null);
   const gridRef = useRef<HTMLDivElement | null>(null);
   const elementRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const isInitialUrlSync = useRef(true);
 
   const activeSymbol = hoveredSymbol ?? pinnedSymbol;
   const activeElement = elements.find((item) => item.symbol === activeSymbol) ?? elements[13];
@@ -211,6 +221,23 @@ export default function Home() {
     setHoveredMineral(id);
   }, []);
 
+  const applyAtlasQuery = useCallback((nextQuery: AtlasQuery) => {
+    setPinnedSymbol(nextQuery.element);
+    setPinnedMineral(nextQuery.mineral);
+    setCompareMode(nextQuery.compare !== null);
+    setCompareSymbols(nextQuery.compare ?? ["Si", "O"]);
+    setCompareSlot(1);
+    setFamily(initialChoice(nextQuery.family, filters.map((item) => item.id), "all"));
+    setHardnessFilter(initialChoice(nextQuery.hardness, hardnessOptions.map((option) => option.id), "all"));
+    setCrystalFilter(initialChoice(nextQuery.crystal, crystalOptions, "all"));
+    setColorFilter(initialChoice(nextQuery.color, colorOptions, "all"));
+    setAdvancedOpen(nextQuery.filtersOpen);
+    setHoveredSymbol(null);
+    setHoveredMineral(null);
+    setQuery("");
+    setUiError(null);
+  }, []);
+
   useLayoutEffect(() => {
     const updateLines = () => {
       const grid = gridRef.current;
@@ -255,6 +282,19 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    const onPopState = () => {
+      const nextQuery = readAtlasQuery();
+      applyAtlasQuery(nextQuery);
+      const url = `${window.location.pathname}${serializeAtlasQuery(nextQuery)}${window.location.hash}`;
+      if (`${window.location.pathname}${window.location.search}${window.location.hash}` !== url) {
+        window.history.replaceState(null, "", url);
+      }
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [applyAtlasQuery]);
+
+  useEffect(() => {
     const next = serializeAtlasQuery({
       element: pinnedSymbol,
       mineral: pinnedMineral,
@@ -267,8 +307,10 @@ export default function Home() {
     });
     const url = `${window.location.pathname}${next}${window.location.hash}`;
     if (`${window.location.pathname}${window.location.search}${window.location.hash}` !== url) {
-      window.history.replaceState(null, "", url);
+      const method = isInitialUrlSync.current ? "replaceState" : "pushState";
+      window.history[method](null, "", url);
     }
+    isInitialUrlSync.current = false;
   }, [advancedOpen, colorFilter, compareMode, compareSymbols, crystalFilter, family, hardnessFilter, pinnedMineral, pinnedSymbol]);
 
   const toggleFullscreen = async () => {
@@ -324,7 +366,10 @@ export default function Home() {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               onKeyDown={(event) => {
-                if (event.key === "Enter" && searchMatches[0]) chooseElement(searchMatches[0].symbol);
+                if (event.key === "Enter") {
+                  const match = searchElements(elements, event.currentTarget.value)[0];
+                  if (match) chooseElement(match.symbol);
+                }
                 if (event.key === "Escape") setQuery("");
               }}
               placeholder="Find an element…"
